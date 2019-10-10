@@ -1,2 +1,3 @@
 # object-detection
-Object detection with TensorFlow 2.0
+
+TensorFlow 2.0 for object detection. 
