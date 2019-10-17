@@ -7,7 +7,7 @@ import pandas as pd
 WD_PATH = '/home/snamjoshi/Documents/git_repos/object-detection/retinanet/'
 CSV_PATH = WD_PATH + 'learning_data.csv'
 #IMAGES_DIR_PATH = '/home/snamjoshi/docker/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/LL1_penn_fudan_pedestrian_dataset/media/'
-IMAGES_DIR_PATH_AWS = '/mnt/data/object-detection/retinanet'
+IMAGES_DIR_PATH_AWS = '/mnt/data/datasets/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/LL1_penn_fudan_pedestrian_dataset/media/'
 
 ### Prepare and export annotations data file
 learning_data = pd.read_csv(CSV_PATH)
