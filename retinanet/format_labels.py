@@ -6,12 +6,14 @@ import pandas as pd
 
 WD_PATH = '/home/snamjoshi/Documents/git_repos/object-detection/retinanet/'
 CSV_PATH = WD_PATH + 'learning_data.csv'
-IMAGES_DIR_PATH = '/home/snamjoshi/docker/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/LL1_penn_fudan_pedestrian_dataset/media/'
+#IMAGES_DIR_PATH = '/home/snamjoshi/docker/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/LL1_penn_fudan_pedestrian_dataset/media/'
+IMAGES_DIR_PATH_AWS = '/mnt/data/object-detection/retinanet'
 
 ### Prepare and export annotations data file
 learning_data = pd.read_csv(CSV_PATH)
 learning_data = learning_data.drop(['d3mIndex'], axis = 1)
-learning_data['image'] = IMAGES_DIR_PATH + learning_data['image']
+#learning_data['image'] = IMAGES_DIR_PATH + learning_data['image']
+learning_data['image'] = IMAGES_DIR_PATH_AWS + learning_data['image']
 
 bounding_coords = learning_data['bounding_box'].str.split(',', expand = True)
 bounding_coords = bounding_coords.drop(bounding_coords.columns[[2, 5, 6, 7]], axis = 1)
@@ -23,7 +25,8 @@ learning_data = learning_data.drop(['bounding_box'], axis = 1)
 
 annotation = pd.concat([learning_data, bounding_coords, class_name], axis = 1)
 annotation.columns = ['path', 'x1', 'y1', 'x2', 'y2', 'class_name']
-annotation.to_csv(WD_PATH + 'annotation.csv', index = False, header = False)
+#annotation.to_csv(WD_PATH + 'annotation.csv', index = False, header = False)
+annotation.to_csv(WD_PATH + 'annotation_AWS.csv', index = False, header = False)
 
 ### Prepare and export ID data file
 id_mapping = pd.concat([annotation['class_name'], pd.Series(annotation.index.values)], axis = 1)
