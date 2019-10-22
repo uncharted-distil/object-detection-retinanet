@@ -2,14 +2,17 @@
 Script to format learning_data.csv into a format accepted by RetinaNet.
 RetinaNet expects the annotations to be of the form 'path/to/image.png,x1,y1,x2,y2,class_name'
 """
+
+# Import
 import pandas as pd
 
+# Global vars
 WD_PATH = '/home/snamjoshi/Documents/git_repos/object-detection/retinanet/'
 CSV_PATH = WD_PATH + 'learning_data.csv'
 #IMAGES_DIR_PATH = '/home/snamjoshi/docker/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/LL1_penn_fudan_pedestrian_dataset/media/'
 IMAGES_DIR_PATH_AWS = '/mnt/data/datasets/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/LL1_penn_fudan_pedestrian_dataset/media/'
 
-### Prepare and export annotations data file
+# Prepare and export annotations data file
 learning_data = pd.read_csv(CSV_PATH)
 learning_data = learning_data.drop(['d3mIndex'], axis = 1)
 #learning_data['image'] = IMAGES_DIR_PATH + learning_data['image']
@@ -28,7 +31,7 @@ annotation.columns = ['path', 'x1', 'y1', 'x2', 'y2', 'class_name']
 #annotation.to_csv(WD_PATH + 'annotation.csv', index = False, header = False)
 annotation.to_csv(WD_PATH + 'annotation_AWS.csv', index = False, header = False)
 
-### Prepare and export ID data file
+# Prepare and export ID data file
 id_mapping = pd.concat([annotation['class_name'], pd.Series(annotation.index.values)], axis = 1)
 id_mapping.columns = ['class_name', 'id']
 id_mapping = id_mapping.iloc[[1]]

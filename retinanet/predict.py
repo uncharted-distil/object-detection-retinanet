@@ -1,5 +1,93 @@
+"""
+Script to run RetinaNet predictions and generate files for the pascalvoc tools.
+
+The script takes the following arguments:
+1. The name of the model.
+2. The absolute path to the h5 file.
+3. Path to testing images.
+4. Name of the backbone used.
+
+Run this file on an inference model and not a training model.
+
+The script will then do the following:
+1. Create the appropriate ground truth files for each image and put it in the groundtruths/ directory.
+2. Run predictions on the inference model to create bounding box coordinates.
+3. Export these bounding box coordinates to a files in predictions/ for each image.
+
+"""
+
+# Import
+import sys
+import pandas as pd
+import tensorflow as tf
+import glob
+import numpy as np
+
+from PIL import Image
+from keras_retinanet import models
+from keras_retinanet.utils.image import read_image_bgr, preprocess_image, resize_image
+
+# Other setup
+#gpu = 0
+#setup_gpu(gpu)
+
+# Global vars
+#MODEL_NAME = sys.argv[1]
+#PRED_PATH = sys.argv[2]
+#IMAGE_PATH = sys.argv[3]
+MODEL_NAME = 'model2'
+PRED_PATH = '/home/snamjoshi/Documents/models/model2_102219/'
+IMAGE_PATH = '/home/snamjoshi/docker/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/LL1_penn_fudan_pedestrian_dataset/media/'
+
+CSV_NAME = 'annotation_AWS.csv'
+WD_PATH = '/home/snamjoshi/Documents/git_repos/object-detection/retinanet/'
+CSV_PATH = WD_PATH + CSV_NAME
+MODEL_PATH = PRED_PATH + MODEL_NAME + '.h5'
+
+# Import files
+annotations = pd.read_csv(CSV_PATH, header = None)
+
+# Process ground truth file
+## Modify bounding coordinates
+annotations = annotations.iloc[:, 1:6]
+annotations.columns = ['L', 'T', 'B', 'R', 'class_name']
+annotations = annotations[['class_name', 'L', 'T', 'R', 'B']]
+
+"""
+>>> Add columns to file that represent the image_index
+>>> For each image index row, collect and separate to a data frame
+>>> Export each data frame in a separate CSV file
+>>> The name of the file will follow the format: model_name + image_index + .txt
+"""
+
+## Export ground truth file
+annotations.to_csv(WD_PATH + 'models/' + MODEL_NAME + '/groundtruths/' + MODEL_NAME + '_groundtruths.txt', index = False, header = False, sep = '\t')
+
+# Run predictions on all images
+#model = models.load_model(MODEL_PATH, backbone_name = sys.argv[4])
+model = models.load_model(MODEL_PATH, backbone_name = 'resnet50')
+labels_to_names = {0: 'pedestrian'}
+
+## Load image list
+image_list = []
+for filename in glob.glob(IMAGE_PATH + '*.png'):
+    image = Image.open(filename)
+    image_list.append(image)
+
+## Preprocess image for network
+image = preprocess_image(image)
+image, scale = resize_image(image)
+
+## Process image
+boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))
+
+## Export object bounding boxes
+
+
 #!/usr/bin/env python
 # coding: utf-8
+
+
 
 # ## Load necessary modules
 # import keras
@@ -26,16 +114,7 @@ import time
 # set tf backend to allow memory to grow, instead of claiming everything
 import tensorflow as tf
 
-# use this to change which GPU to use
-gpu = 0
-
-# set the modified tf session as backend in keras
-setup_gpu(gpu)
-
-
-# ## Load RetinaNet model
-
-# In[ ]:
+# Load RetinaNet model
 
 MODEL_NAME = 'model1.h5'
 PRED_PATH = '/mnt/data/predictions/'
