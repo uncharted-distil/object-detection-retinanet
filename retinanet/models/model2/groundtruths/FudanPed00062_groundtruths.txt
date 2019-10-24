@@ -1,0 +1,2 @@
+pedestrian	175	25	321	255
+pedestrian	291	34	330	377

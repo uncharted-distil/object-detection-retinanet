@@ -48,20 +48,19 @@ MODEL_PATH = PRED_PATH + MODEL_NAME + '.h5'
 annotations = pd.read_csv(CSV_PATH, header = None)
 
 # Process ground truth file
+## Create ID column
+image_name = annotations[0].map(lambda x: x.lstrip(IMAGE_PATH))
+annotations[0] = image_name.str.replace(r'(.png)', '')
+
 ## Modify bounding coordinates
-annotations = annotations.iloc[:, 1:6]
-annotations.columns = ['L', 'T', 'B', 'R', 'class_name']
-annotations = annotations[['class_name', 'L', 'T', 'R', 'B']]
+annotations = annotations.iloc[:, 0:6]
+annotations.columns = ['image_index', 'L', 'T', 'B', 'R', 'class_name']
+annotations = annotations[['class_name', 'L', 'T', 'R', 'B', 'image_index']]
+unique_image_index = annotations['image_index'].unique().tolist()
 
-"""
->>> Add columns to file that represent the image_index
->>> For each image index row, collect and separate to a data frame
->>> Export each data frame in a separate CSV file
->>> The name of the file will follow the format: model_name + image_index + .txt
-"""
-
-## Export ground truth file
-annotations.to_csv(WD_PATH + 'models/' + MODEL_NAME + '/groundtruths/' + MODEL_NAME + '_groundtruths.txt', index = False, header = False, sep = '\t')
+for image in unique_image_index:
+    image_annotation = annotations.loc[annotations['image_index'] == image].drop(['image_index'], axis = 1)
+    image_annotation.to_csv(WD_PATH + 'models/' + MODEL_NAME + '/groundtruths/' + image + '_groundtruths.txt', index = False, header = False, sep = '\t')
 
 # Run predictions on all images
 #model = models.load_model(MODEL_PATH, backbone_name = sys.argv[4])
@@ -74,12 +73,18 @@ for filename in glob.glob(IMAGE_PATH + '*.png'):
     image = Image.open(filename)
     image_list.append(image)
 
+image_list = []
+for filename in glob.glob(IMAGE_PATH + '*.png'):
+    image = read_image_bgr(filename)
+    image_list.append(image)
+
 ## Preprocess image for network
-image = preprocess_image(image)
+image = preprocess_image(image_list[1])
 image, scale = resize_image(image)
 
 ## Process image
-boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))
+boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis = 0))
+print(boxes)
 
 ## Export object bounding boxes
 
@@ -194,6 +199,15 @@ print(labels)
 
 # In[ ]:
 
+### Working zone
+annotations[0] = image_name.str.extract(r'(\d+)')
 
+"""
+>>> [X] Add columns to file that represent the image_index
+>>> [X] For each image index row, collect and separate to a data frame
+>>> [X] Export each data frame in a separate CSV file
+>>> [X] The name of the file will follow the format: model_name + image_index + .txt
+"""
 
-
+## Export ground truth file
+annotations.to_csv(WD_PATH + 'models/' + MODEL_NAME + '/groundtruths/' + MODEL_NAME + '_groundtruths.txt', index = False, header = False, sep = '\t')

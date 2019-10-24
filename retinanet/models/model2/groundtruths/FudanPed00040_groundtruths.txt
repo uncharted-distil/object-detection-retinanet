@@ -1,0 +1,2 @@
+pedestrian	201	157	437	279
+pedestrian	279	172	430	377
