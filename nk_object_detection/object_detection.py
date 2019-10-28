@@ -105,6 +105,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         super().__init__(hyperparams = hyperparam)
         self.image_paths = None
         self.annotations = None
+        self.base_dir = None
         self.classes = None
         self.workers = 1
         self.multiprocessing = 1
@@ -124,7 +125,6 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         ----------
         inputs: numpy ndarray of size (n_images, dimension) containing the d3m Index, image name, 
         and bounding box for each image.
-
         outputs: numpy ndarray of size (n_detections, dimension) containing bounding box coordinates 
         for each object detected in each image
         """
@@ -132,8 +132,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         # Prepare annotation file
         ## Generate image paths
         image_cols = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/FileName')
-        base_dir = [inputs.metadata.query((metadata_base.ALL_ELEMENTS, t))['location_base_uris'][0].replace('file:///', '/') for t in image_cols]
-        self.image_paths = np.array([[os.path.join(base_path, filename) for filename in inputs.iloc[:,col]] for base_path, col in zip(base_paths, image_cols)]).flatten()
+        self.base_dir = [inputs.metadata.query((metadata_base.ALL_ELEMENTS, t))['location_base_uris'][0].replace('file:///', '/') for t in image_cols]
+        self.image_paths = np.array([[os.path.join(base_dir, filename) for filename in inputs.iloc[:,col]] for base_dir, col in zip(base_dir, image_cols)]).flatten()
 
         ## Arrange proper bounding coordinates
         bounding_coords = inputs.bounding_box.str.split(',', expand = True)
@@ -146,16 +146,71 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         ## Assemble annotation file
         self.annotations = pd.concat([self.image_paths, bounding_coords, class_name], axis = 1)
+        self.annotation.columns = ['img_file', 'x1', 'y1', 'x2', 'y2', 'class_name']
 
         # Prepare ID file
-        self.classes = pd.Series(['class,0'])
+        self.classes = pd.DataFrame({'class_name': ['class'], 
+                                     'class_id': [0]})
+
+    def create_callbacks(model, training_model, prediction_model, validation_generator):
+        """
+        Creates the callbacks to use during training.
+
+        Parameters
+        ----------
+        model: The base model.
+        training_model: The model that is used for training.
+        prediction_model: The model that should be used for validation.
+        validation_generator: The generator for creating validation data.
+        
+        Returns: A list of callbacks used for training.
+        """
+        callbacks = []
+
+        callbacks.append(keras.callbacks.ReduceLROnPlateau(
+            monitor   = 'loss',
+            factor    = 0.1,
+            patience  = 2,
+            verbose   = 1,
+            mode      = 'auto',
+            min_delta = 0.0001,
+            cooldown  = 0,
+            min_lr    = 0
+        ))
+
+        return callbacks
+    
+    def create_models(backbone_retinanet, num_classes, weights, multi_gpu = 0, 
+                      freeze_backbone = False, lr = 1e-5, config = None):
+                      
+        """ Creates three models (model, training_model, prediction_model).
+
+        Parameters
+        ----------
+            backbone_retinanet : A function to call to create a retinanet model with a given backbone.
+            num_classes        : The number of classes to train.
+            weights            : The weights to load into the model.
+            multi_gpu          : The number of GPUs to use for training.
+            freeze_backbone    : If True, disables learning for the backbone.
+            config             : Config parameters, None indicates the default configuration.
+
+        Returns
+            model            : The base model. This is also the model that is saved in snapshots.
+            training_model   : The training model. If multi_gpu=0, this is identical to model.
+            prediction_model : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
+        """
+
+        modifier = freeze_model if freeze_backbone else None
+        anchor_params = None
+        num_anchors   = None
+
 
     def fit():
         # Create object that stores backbone information
         backbone = models.backbone(self.hyperparams['backbone'])
 
         # Create the generators
-        train_generator, validation_generator = CSVGenerator(self.annotations, self.classes, self.hyperparams['batch_size'], backbone.preprocess_image)
+        train_generator, validation_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], backbone.preprocess_image)
 
         # Create the model
         if self.hyperparams['imagenet_weights'] is True:
@@ -165,7 +220,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         print('Creating model...')
 
-        model, training_model, prediction_model = create_model(
+        model, training_model, prediction_model = create_models(
             backbone_retinanet = backbone.retinanet.
             n_classes = train_generator.num_classes()
             weights = weights
@@ -203,11 +258,11 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
 """ fit() checklist:
 >>> [X] Backbone information
->>> >>> [] Check backbone()
->>> >>> >>> [] How to tell these functions to just load the backbone from a directory
+>>> >>> [X] Check backbone()
+>>> >>> >>> [X] How to tell these functions to just load the backbone from a directory?
 >>> [X] Build out set_training_data()
->>> [] CSV generator
->>> >>> [] Check CSVGenerator()
+>>> [X] CSV generator
+>>> >>> [X] Check CSVGenerator()
 >>> [] Create model
 >>> >>> [] Check create_model()
 >>> >>> [] Check num_classes()
@@ -223,8 +278,6 @@ def produce():
 # Convert to inference model
 # Create generator
 # Evaluate on test data
-
-
 
 """Hyperparameter information"""
 # Current hyperparams:
@@ -286,3 +339,28 @@ def produce():
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description = "Initialize the model with weights from a file."
     }
+
+test = pd.DataFrame({'class_name': ['obj1', 'obj2', 'obj3', 'obj4'], 
+                     'class_id': [0, 1, 2, 3]}) 
+    
+test_dict = OrderedDict()
+for index, row in test.iterrows():
+    class_name, class_id = row
+    test_dict[class_name] = class_id
+
+
+self.classes = pd.Series(['class', 0], index = ['class_name', 'class_id'])
+
+annotation_df = annotation
+annotation_df.columns = ['img_file', 'x1', 'y1', 'x2', 'y2', 'class_name']
+annotation_dict = OrderedDict()
+
+for index, row in annotation_df.iterrows():
+    img_file, x1, y1, x2, y2, class_name = row[:6]
+
+    if img_file not in annotation_dict:
+        annotation_dict[img_file] = []
+
+    annotation_dict[img_file].append({'x1': x1, 'x2': x2, 'y1': y1, 'y2': y2, 'class': class_name})
+
+
