@@ -1,6 +1,25 @@
+import os
+import sys
+import warnings
+
+import keras
+import keras.preprocessing.image
 import tensorflow as tf
-from d3m.metadata import base as metadata_base, hyperparams, params
 import pandas as pd
+
+from d3m.metadata import base as metadata_base, hyperparams, params
+from .. import layers  # noqa: F401
+from .. import losses
+from .. import models
+from ..callbacks import RedirectModel
+from ..callbacks.eval import Evaluate
+from ..utils.eval import evaluate
+from ..models.retinanet import retinanet_bbox
+from ..preprocessing.csv_generator import CSVGenerator
+from ..utils.anchors import make_shapes_callback
+from ..utils.model import freeze as freeze_model
+#from ..utils.gpu import setup_gpu
+
 
 #__all__ = ('EnsembleForest',)
 #logger = logging.getLogger(__name__)
@@ -62,8 +81,10 @@ class Hyperparams(hyperparams.Hyperparams):
         description = "Compute validation loss during training."
     }
 
+
 class Params(params.Params):
     pass
+
 
 class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperparams]):
     """
@@ -107,6 +128,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         self.annotations = None
         self.base_dir = None
         self.classes = None
+        self.training_model = None
         self.workers = 1
         self.multiprocessing = 1
         self.max_queue_size = 10
@@ -123,10 +145,14 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         Parameters
         ----------
-        inputs: numpy ndarray of size (n_images, dimension) containing the d3m Index, image name, 
-        and bounding box for each image.
-        outputs: numpy ndarray of size (n_detections, dimension) containing bounding box coordinates 
-        for each object detected in each image
+            inputs: numpy ndarray of size (n_images, dimension) containing the d3m Index, image name, 
+            and bounding box for each image.
+            outputs: numpy ndarray of size (n_detections, dimension) containing bounding box coordinates 
+            for each object detected in each image.
+
+        Returns
+        -------
+            No returns. Function is called by pipeline at runtime.
         """
 
         # Prepare annotation file
@@ -152,18 +178,21 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         self.classes = pd.DataFrame({'class_name': ['class'], 
                                      'class_id': [0]})
 
+
     def create_callbacks(model, training_model, prediction_model, validation_generator):
         """
         Creates the callbacks to use during training.
 
         Parameters
         ----------
-        model: The base model.
-        training_model: The model that is used for training.
-        prediction_model: The model that should be used for validation.
-        validation_generator: The generator for creating validation data.
+            model: The base model.
+            training_model: The model that is used for training.
+            prediction_model: The model that should be used for validation.
+            validation_generator: The generator for creating validation data.
         
-        Returns: A list of callbacks used for training.
+        Returns
+        -------
+            A list of callbacks used for training.
         """
         callbacks = []
 
@@ -179,11 +208,13 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         ))
 
         return callbacks
+
     
     def create_models(backbone_retinanet, num_classes, weights, multi_gpu = 0, 
                       freeze_backbone = False, lr = 1e-5, config = None):
                       
-        """ Creates three models (model, training_model, prediction_model).
+        """ 
+        Creates three models (model, training_model, prediction_model).
 
         Parameters
         ----------
@@ -195,7 +226,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             config             : Config parameters, None indicates the default configuration.
 
         Returns
-            model            : The base model. This is also the model that is saved in snapshots.
+        -------
+            model            : The base model. 
             training_model   : The training model. If multi_gpu=0, this is identical to model.
             prediction_model : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
         """
@@ -204,8 +236,44 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         anchor_params = None
         num_anchors   = None
 
+        model = model_with_weights(backbone_retinanet(num_classes, num_anchors = num_anchors, modifier = modifier), weights = weights, skip_mismatch = True)
+        training_model = model
+        prediction_model = retinanet_bbox(model = model, anchor_params = anchor_params)
+        training_model.compile(
+            loss = {
+                'regression'    :  losses.smooth_l1(),
+                'classification':  losses.focal()
+            },
+            optimizer = keras.optimizers.adam(lr = lr, clipnorm = 0.001)
+        )
 
-    def fit():
+        return model, training_model, prediction_model
+    
+    def num_classes(self):
+        """ 
+        Number of classes in the dataset.
+        """
+        return max(self.classes.values()) + 1
+
+
+    def create_generator(args):
+        """
+        Create generator for evaluation.
+        """
+
+        validation_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], backbone.preprocess_image, shuffle_groups = False)
+        return validation_generator
+
+
+    def fit(self, *, timeout: float = None, iterations: int = None) -> CallResult[None]:
+        """
+        Creates the image generators and then trains RetinaNet model on the image paths in the input 
+        dataframe column.
+
+        Can choose to use validation generator. If no weight file is provided, the default is to use the
+        ImageNet weights.
+        """
+
         # Create object that stores backbone information
         backbone = models.backbone(self.hyperparams['backbone'])
 
@@ -218,7 +286,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         else:
             weights = # .h5 file
 
-        print('Creating model...')
+        print('Creating model...', file = sys.__stdout__)
 
         model, training_model, prediction_model = create_models(
             backbone_retinanet = backbone.retinanet.
@@ -228,7 +296,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             lr = self.hyperparams('lr')
         )
 
-        print(model.summary())
+        print(model.summary(), file = sys.__stdout__)
 
         if self.hyperparams is False:
             validation_generator = None
@@ -242,8 +310,10 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         # Callbacks
         callbacks = create_callbacks()
 
-        # Train
-        return training_model.fit_generator(
+        start_time = time.time()
+        print('Starting training...', file = sys.__stdout__)
+
+        self.training_model.fit_generator(
             generator = train_generator,
             steps_per_epoch = self.hyperparams['n_steps'],
             epochs = self.hyperparams['n_epochs'],
@@ -254,7 +324,49 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             max_queue_size = self.max_queue_size,
             validation_data = validation_generator
         )
+        
+        print(f'Training complete. training took {time.time()-start_time} seconds', file = sys.__stdout__)
+        return CallResult(None) 
 
+    def produce(self, *, inputs: Inputs, timeout: float = None, iterations: int = None) -> CallResult[Outputs]:
+        """
+        Produce image detection predictions.
+
+        Parameters
+        ----------
+            inputs: 
+
+        Returns
+        -------
+            outputs:
+        """
+
+        # create the generator
+        generator = create_generator(self.annotations, self.classes, shuffle_groups = False)
+
+        # load the model
+        print('Loading model...')
+        model = models.load_model(self.training_model, backbone_name = self.hyperparams['backbone'])
+
+        # Convert to inference model
+        inference_model = models.convert_model(model)
+
+        # Calculate mean average precision
+        average_precision = evaluate(generator, model, iou_threashold, max_detections)
+
+        #print('mAP using the weighted average of precisions among classes: {:.4f}'.format(sum([a * b for a, b in zip(total_instances, precisions)]) / sum(total_instances)))
+        #print('mAP: {:.4f}'.format(sum(precisions) / sum(x > 0 for x in total_instances)))
+
+        return CallResult(results_df)
+
+
+""" produce() checklist:
+>>> [X] Check create_generator()
+>>> [X] Check load_model()
+>>> [X] Check convert_model()
+>>> [] Determine how evaluation works with the D3M metrics
+>>> [] Print statement for the mAP
+"""
 
 """ fit() checklist:
 >>> [X] Backbone information
@@ -263,21 +375,17 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 >>> [X] Build out set_training_data()
 >>> [X] CSV generator
 >>> >>> [X] Check CSVGenerator()
->>> [] Create model
->>> >>> [] Check create_model()
->>> >>> [] Check num_classes()
->>> >>> [] Check make_shapes_callback()
->>> [] Compute backbone layer shapes
->>> [] Create callbacks
->>> [] Train
->>> >>> [] Check fit_generator()
+>>> [X] Create model
+>>> >>> [X] Check create_model()
+>>> >>> [X] Check num_classes()
+>>> >>> [X] Check make_shapes_callback()
+>>> [X] Compute backbone layer shapes
+>>> [X] Create callbacks
+>>> [X] Train
+>>> >>> [X] Check fit_generator()
 """
 
-def produce():
-# Load model
-# Convert to inference model
-# Create generator
-# Evaluate on test data
+
 
 """Hyperparameter information"""
 # Current hyperparams:

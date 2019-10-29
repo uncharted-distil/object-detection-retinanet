@@ -1,2 +1,0 @@
-pedestrian	7	135	389	142
-pedestrian	194	123	421	339
