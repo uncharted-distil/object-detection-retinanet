@@ -1,4 +1,4 @@
-"""
+-"""
 Copyright 2017-2018 Fizyr (https://fizyr.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -169,12 +169,12 @@ def evaluate(
     all_annotations    = _get_annotations(generator)
     average_precisions = {}
 
-    # all_detections = pickle.load(open('all_detections.pkl', 'rb'))
-    # all_annotations = pickle.load(open('all_annotations.pkl', 'rb'))
-    # pickle.dump(all_detections, open('all_detections.pkl', 'wb'))
-    # pickle.dump(all_annotations, open('all_annotations.pkl', 'wb'))
+    #all_detections = pickle.load(open('all_detections.pkl', 'rb'))
+    #all_annotations = pickle.load(open('all_annotations.pkl', 'rb'))
+    #pickle.dump(all_detections, open('all_detections.pkl', 'wb'))
+    #pickle.dump(all_annotations, open('all_annotations.pkl', 'wb'))
 
-    # process detections and annotations
+    process detections and annotations
     for label in range(generator.num_classes()):
         if not generator.has_label(label):
             continue

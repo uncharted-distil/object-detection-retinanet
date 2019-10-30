@@ -20,10 +20,6 @@ from ..utils.anchors import make_shapes_callback
 from ..utils.model import freeze as freeze_model
 #from ..utils.gpu import setup_gpu
 
-
-#__all__ = ('EnsembleForest',)
-#logger = logging.getLogger(__name__)
-
 Inputs = container.pandas.DataFrame
 Outputs = container.pandas.DataFrame
 
@@ -62,6 +58,12 @@ class Hyperparams(hyperparams.Hyperparams):
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description = "If true, initializes the model with pretrained imagenet weights. If false, expects an .h5 weights file."
     }
+
+    #weights = hyperparams.Hyperparameter[str]{
+    #    default = 'image_net',
+    #    semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+    #    description = "If true, initializes the model with pretrained imagenet weights. If false, expects an .h5 weights file."
+    #}
 
     learning_rate = hyperparams.Hyperparameter[float]{
         default = 1e-5,
@@ -102,7 +104,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         'id': 'd921be1e-b158-4ab7-abb3-cb1b17f42639',
         'version': '0.1.0',
         'name': 'ObjectDetectionRN',
-        'keywords': ['object detection', 'convolutional neural network'],
+        'keywords': ['object detection', 'convolutional neural network', 'digital image processing', 'RetinaNet'],
         'source': {
             'name': 'Sanjeev Namjoshi',
             'contact': 'sanjeev@newknowledge.io',
@@ -110,16 +112,24 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                 'https://github.com/NewKnowledge/object-detection',
             ],
         },
-       'installation': [{
-                'type': # TBD,
-                'package_uri': # TBD,
+       'installation': [
+           {
+                'type': "PIP",
+                'package_uri': "" # TBD
                 ),
-            }],
-            'algorithm_types': [
-                # TBD ,
+            },
+            {
+            "type": "FILE",
+            "key": "weights",
+            "file_uri": "",   # TBD
+            "file_digest": "" # TBD 
+            },
             ],
-            'primitive_family': #TBD,
-        },
+            'algorithm_types': [
+                metadata_base.PrimitiveAlgorithmType.RETINANET_CONVOLUTIONAL_NEURAL_NETWORK 
+            ],
+            'primitive_family': metadata_base.PrimitiveFamily.OBJECT_DETECTION
+        }
     )
  
     def __init__(self, *, hyperparams: Hyperparams) -> None:
@@ -146,9 +156,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         Parameters
         ----------
             inputs: numpy ndarray of size (n_images, dimension) containing the d3m Index, image name, 
-            and bounding box for each image.
-            outputs: numpy ndarray of size (n_detections, dimension) containing bounding box coordinates 
-            for each object detected in each image.
+                    and bounding box for each image.
 
         Returns
         -------
@@ -185,14 +193,14 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         Parameters
         ----------
-            model: The base model.
-            training_model: The model that is used for training.
-            prediction_model: The model that should be used for validation.
-            validation_generator: The generator for creating validation data.
+            model                : The base model.
+            training_model       : The model that is used for training.
+            prediction_model     : The model that should be used for validation.
+            validation_generator : The generator for creating validation data.
         
         Returns
         -------
-            A list of callbacks used for training.
+            callbacks            : A list of callbacks used for training.
         """
         callbacks = []
 
@@ -227,9 +235,9 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         Returns
         -------
-            model            : The base model. 
-            training_model   : The training model. If multi_gpu=0, this is identical to model.
-            prediction_model : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
+            model              : The base model. 
+            training_model     : The training model. If multi_gpu=0, this is identical to model.
+            prediction_model   : The model wrapped with utility functions to perform object detection (applies regression values and performs NMS).
         """
 
         modifier = freeze_model if freeze_backbone else None
@@ -265,13 +273,71 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         return validation_generator
 
 
+    def evaluate_model(generator, model, iou_threshold, score_threshold, max_detections):
+        """ 
+        Evaluate a given dataset using a given model.
+
+        Parameters
+        ----------
+        generator       : The generator that represents the dataset to evaluate.
+        model           : The model to evaluate.
+        iou_threshold   : The threshold used to consider when a detection is positive or negative.
+        score_threshold : The score confidence threshold to use for detections.
+        max_detections  : The maximum number of detections to use per image.
+        save_path       : The path to save images with visualized detections to.
+        
+        Returns
+        -------
+        all_dtections   : A list containing the predicted boxes for each image in the generator.
+        """
+
+        for i in range(generator.size()):
+        raw_image    = generator.load_image(i)
+        image        = generator.preprocess_image(raw_image.copy())
+        image, scale = generator.resize_image(image)
+
+        if keras.backend.image_data_format() == 'channels_first':
+            image = image.transpose((2, 0, 1))
+
+        # run network
+        boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
+
+        # correct boxes for image scale
+        boxes /= scale
+
+        # select indices which have a score above the threshold
+        indices = np.where(scores[0, :] > score_threshold)[0]
+
+        # select those scores
+        scores = scores[0][indices]
+
+        # find the order with which to sort the scores
+        scores_sort = np.argsort(-scores)[:max_detections]
+
+        # select detections
+        image_boxes      = boxes[0, indices[scores_sort], :]
+        image_scores     = scores[scores_sort]
+        image_labels     = labels[0, indices[scores_sort]]
+        image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
+
+        # copy detections to all_detections
+        for label in range(generator.num_classes()):
+            if not generator.has_label(label):
+                continue
+
+            all_detections[i][label] = image_detections[image_detections[:, -1] == label, :-1]
+
+    return all_detections
+
+
     def fit(self, *, timeout: float = None, iterations: int = None) -> CallResult[None]:
         """
         Creates the image generators and then trains RetinaNet model on the image paths in the input 
         dataframe column.
 
-        Can choose to use validation generator. If no weight file is provided, the default is to use the
-        ImageNet weights.
+        Can choose to use validation generator. 
+        
+        If no weight file is provided, the default is to use the ImageNet weights.
         """
 
         # Create object that stores backbone information
@@ -281,6 +347,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         train_generator, validation_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], backbone.preprocess_image)
 
         # Create the model
+        # Check for weights if 'custom_weights' were uploaded6
         if self.hyperparams['imagenet_weights'] is True:
             weights = # Imagenet weights
         else:
@@ -328,19 +395,31 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         print(f'Training complete. training took {time.time()-start_time} seconds', file = sys.__stdout__)
         return CallResult(None) 
 
+
     def produce(self, *, inputs: Inputs, timeout: float = None, iterations: int = None) -> CallResult[Outputs]:
         """
         Produce image detection predictions.
 
         Parameters
         ----------
-            inputs: 
+            inputs: numpy ndarray of size (n_images, dimension) containing the d3m Index, image name, 
+            and bounding box for each image.
 
         Returns
         -------
-            outputs:
-        """
+            outputs: 
+                list of size (n_detections, dimension) where the columns are the image name followed
+                by the detection coordinate for each image. The detection coordinates are in 8-coordinate
+                format.
 
+                list of size (n_images, dimensions) where the columns are the image name followed by the
+                ground truth coordinate for each image. The ground truth coordinates are in 8-coordinate
+                format.
+        """
+        iou_threshold = 0.5     # Bounding box overlap threshold for false positive or true positive
+        score_threshold = 0.05  # The score confidence threshold to use for detections
+        max_detections = 100    # Maxmimum number of detections to use per image
+        
         # create the generator
         generator = create_generator(self.annotations, self.classes, shuffle_groups = False)
 
@@ -351,124 +430,12 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         # Convert to inference model
         inference_model = models.convert_model(model)
 
-        # Calculate mean average precision
-        average_precision = evaluate(generator, model, iou_threashold, max_detections)
+        # Assemble output lists
+        ## Determine predicted bounding boxes (8-coordinate format, list)
+        boxes = evaluate_model(generator, model, iou_threshold, score_threshold, max_detections)
 
-        #print('mAP using the weighted average of precisions among classes: {:.4f}'.format(sum([a * b for a, b in zip(total_instances, precisions)]) / sum(total_instances)))
-        #print('mAP: {:.4f}'.format(sum(precisions) / sum(x > 0 for x in total_instances)))
+        ## Convert ground truth bounding boxes to list (ground_truth_list)
 
+        ## Compile into one object??
+        
         return CallResult(results_df)
-
-
-""" produce() checklist:
->>> [X] Check create_generator()
->>> [X] Check load_model()
->>> [X] Check convert_model()
->>> [] Determine how evaluation works with the D3M metrics
->>> [] Print statement for the mAP
-"""
-
-""" fit() checklist:
->>> [X] Backbone information
->>> >>> [X] Check backbone()
->>> >>> >>> [X] How to tell these functions to just load the backbone from a directory?
->>> [X] Build out set_training_data()
->>> [X] CSV generator
->>> >>> [X] Check CSVGenerator()
->>> [X] Create model
->>> >>> [X] Check create_model()
->>> >>> [X] Check num_classes()
->>> >>> [X] Check make_shapes_callback()
->>> [X] Compute backbone layer shapes
->>> [X] Create callbacks
->>> [X] Train
->>> >>> [X] Check fit_generator()
-"""
-
-
-
-"""Hyperparameter information"""
-# Current hyperparams:
-# backbone [resnet50]
-# batch_size [1]
-# n_epochs [50]
-# freeze-backbone [True]
-# imagenet_weights: initialize the model with pretrained imagenet weights [True]
-# lr [float]
-# n_steps [int]
-# weights: initialize model with weights from a file [True]
-
-# Default constants:
-# multiprocessing: use multiprocessing in fit_generator [True]
-# workers: number of generator workers [1]
-# max-queue-size: queue length for multiprocessing workers in fit_generator [10]
-
-# Possible future hyperparams:
-# gpu: Id of GPU to use
-# multi-gpu: number of GPUs to use
-# model-type: regression or classification. Is this necessary??
-
-# Image augmentation options:
-# randomly transform image and annotations
-# image-min-side: rescale the image so the smallest side is min_side
-# image-max-side: rescale the image if the largest side is larger than max_side
-
-
-
-
-""" WORKSPACE """
-    def create_generators(args, preprocess_image):
-        """ 
-        Create generators for training and validation.
-
-        Parameters
-        ----------
-        batch_size       : Size of the batches as input to the model (hyperparameter).
-        annotations      : Dataframe containing the image path, bounding coordinates, and class name for each image (created by set_training_data()).
-        classes          : Series containing a class name and one-hot encodin (created by set_training_data())
-        preprocess_image : Function that preprocesses an image for the network.
-        """
-
-        train_generator = CSVGenerator(annotations, classes, batch_size)
-
-        if args.dataset_type == 'csv':
-            train_generator = CSVGenerator(
-                args.annotations,
-                args.classes,
-                transform_generator=transform_generator,
-                visual_effect_generator=visual_effect_generator,
-                **common_args
-            )
-
-        return train_generator, validation_generator
-
-    weights = hyperparams.Hyperparameter[bool]{
-        default = True,
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-        description = "Initialize the model with weights from a file."
-    }
-
-test = pd.DataFrame({'class_name': ['obj1', 'obj2', 'obj3', 'obj4'], 
-                     'class_id': [0, 1, 2, 3]}) 
-    
-test_dict = OrderedDict()
-for index, row in test.iterrows():
-    class_name, class_id = row
-    test_dict[class_name] = class_id
-
-
-self.classes = pd.Series(['class', 0], index = ['class_name', 'class_id'])
-
-annotation_df = annotation
-annotation_df.columns = ['img_file', 'x1', 'y1', 'x2', 'y2', 'class_name']
-annotation_dict = OrderedDict()
-
-for index, row in annotation_df.iterrows():
-    img_file, x1, y1, x2, y2, class_name = row[:6]
-
-    if img_file not in annotation_dict:
-        annotation_dict[img_file] = []
-
-    annotation_dict[img_file].append({'x1': x1, 'x2': x2, 'y1': y1, 'y2': y2, 'class': class_name})
-
-
