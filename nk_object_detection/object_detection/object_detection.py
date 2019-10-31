@@ -24,15 +24,25 @@ Inputs = container.pandas.DataFrame
 Outputs = container.pandas.DataFrame
 
 class Hyperparams(hyperparams.Hyperparams):
-    backbone = hyperparams.Hyperparameter[str](
+    backbone = hyperparams.Choice(
+        choices = {
+            'densenet121': hyperparams.Hyperparams[None](default = None),
+            'densenet169': hyperparams.Hyperparams[None](default = None),
+            'densenet201': hyperparams.Hyperparams[None](default = None),
+            'mobilenet128': hyperparams.Hyperparams[None](default = None),
+            'mobilenet160': hyperparams.Hyperparams[None](default = None),
+            'mobilenet192': hyperparams.Hyperparams[None](default = None),
+            'mobilenet224': hyperparams.Hyperparams[None](default = None),
+            'resnet50': hyperparams.Hyperparams[None](default = None),
+            'resnet101': hyperparams.Hyperparams[None](default = None),
+            'resnet152': hyperparams.Hyperparams[None](default = None),
+            'vgg16': hyperparams.Hyperparams[None](default = None),
+            'vgg19': hyperparams.Hyperparams[None](default = None)
+        },
         default = 'resnet50',
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
-        description = "Backbone architecture which RetinaNet is built. This can be one of " + 
-                      "'densenet121', 'densenet169', 'densenet201'" +
-                      "'mobilenet128', 'mobilenet160', 'mobilenet192', 'mobilenet224'" +
-                      "'resnet50', 'resnet101', 'resnet152', " +
-                      "'vgg16', 'vgg19" +
-                      "All models require downloading weights before runtime."
+        description = "Backbone architecture from which RetinaNet is built. All models " +
+                      "requires a weights file downloaded for use during runtime."
     )
 
     batch_size = hyperparams.Hyperparameter[int](
@@ -49,21 +59,20 @@ class Hyperparams(hyperparams.Hyperparams):
 
     freeze_backbone = hyperparams.Hyperparameter[bool]{
         default = True,
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControleParameter'],
         description = "Freeze training of backbone layers."
     }
 
-    imagenet_weights = hyperparams.Hyperparameter[bool]{
-        default = True,
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-        description = "If true, initializes the model with pretrained imagenet weights. If false, expects an .h5 weights file."
-    }
-
-    #weights = hyperparams.Hyperparameter[str]{
-    #    default = 'image_net',
-    #    semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-    #    description = "If true, initializes the model with pretrained imagenet weights. If false, expects an .h5 weights file."
-    #}
+    weights = hyperparams.Choice(
+        choices = {
+            'imagenet': hyperparams.Hyperparams[None](default = None),
+            'custom': hyperparams.Hyperparams[None](default = None)
+        },
+        default = 'image_net',
+        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+        description = "If 'imagenet' (default), initializes the model with pretrained imagenet weights" +
+                     "If 'custom', then the user is expected to reference their own weight file at runtime."
+    )
 
     learning_rate = hyperparams.Hyperparameter[float]{
         default = 1e-5,
@@ -79,7 +88,7 @@ class Hyperparams(hyperparams.Hyperparams):
 
     compute_val_loss = hyperparams.Hyperparameter[bool]{
         default = True,
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description = "Compute validation loss during training."
     }
 
@@ -348,10 +357,10 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         # Create the model
         # Check for weights if 'custom_weights' were uploaded6
-        if self.hyperparams['imagenet_weights'] is True:
-            weights = # Imagenet weights
+        if self.hyperparams['weights'] == 'imagenet':
+            weights = imagenet_weights
         else:
-            weights = # .h5 file
+            weights = custom_weights
 
         print('Creating model...', file = sys.__stdout__)
 

@@ -1,10 +1,22 @@
-### Issues (object_detection.py) ###
+### Running D3M locally for testing
+"""
+>>> [] Separate the D3M primitive from the other RetinaNet files
+>>> [] Package into a PIP installable (see: https://newknowledge.atlassian.net/wiki/spaces/data/pages/137560135/D3M+Primitive+Guide)
+>>> [] Submit primitive?
+>>> [] Download weights 
+>>> [] Set up Docker image with primitives and weights
+>>> [] Begin testing primitive/pipeline to correct errors
+>>> [] Final training on full data set (on Amazon instance)
+>>> [] Code review
+"""
 
+### Issues (object_detection.py) ###
 """ Hyperparams class
 >>> [] Determine if formatting is correct for JSON
 >>> [] Determine if choice/hyper/control is appropriate
 >>> [] Expand choice parameters
 >>> [] Fix weights hyperparameter
+>>> [] Figure out how RetinaNet downloads weights and all that
 """
 
 """ metadata
@@ -41,15 +53,20 @@
 >>> [X] Check convert_model()
 >>> [X] Determine how evaluation works with the D3M metrics
 >>> [] Finish working on evaluate_model() checklist
->>> [] Convert metrics 
+>>> [] Metrics list (predictions and ground-truths) - convert to single object?
 """
 
 ### Issues (object_detection_pipeline.py)
 
+"""
+
+"""
+
+
 """ 
 >>> [] Figure out what each step of the primitive is for and what is appropriate for my use case
 >>> [] Can I have two list outputs from produce() to pass to the metric evaluation?
->>> [] 
+>>> [] What is the input/output?
 """
 
 """ WORKSPACE (object_detection.py) """
@@ -107,4 +124,26 @@ for index, row in annotation_df.iterrows():
 
     annotation_dict[img_file].append({'x1': x1, 'x2': x2, 'y1': y1, 'y2': y2, 'class': class_name})
 
+imagenet_weights = hyperparams.Hyperparameter[bool]{
+    default = True,
+    semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+    description = "If true, initializes the model with pretrained imagenet weights. If false, expects an .h5 weights file."
+}
 
+backbone = hyperparams.Hyperparameter[str](
+    default = 'resnet50',
+    semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+    description = "Backbone architecture which RetinaNet is built. This can be one of " + 
+                    "'densenet121', 'densenet169', 'densenet201'" +
+                    "'mobilenet128', 'mobilenet160', 'mobilenet192', 'mobilenet224'" +
+                    "'resnet50', 'resnet101', 'resnet152', " +
+                    "'vgg16', 'vgg19" +
+                    "All models require downloading weights before runtime."
+)
+
+weights = hyperparams.Hyperparameter[str]{
+    default = 'image_net',
+    semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+    description = "If 'image_net' (default), initializes the model with pretrained imagenet weights" +
+                    "If 'custom', then the user is expected to reference their own weight file at runtime."
+}
