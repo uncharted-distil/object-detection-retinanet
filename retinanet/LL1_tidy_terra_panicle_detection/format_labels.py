@@ -11,7 +11,7 @@ import pandas as pd
 # Global vars
 WD_PATH = '/home/snamjoshi/Documents/git_repos/object-detection/retinanet/LL1_tidy_terra_panicle_detection/'
 CSV_PATH = WD_PATH + 'learningData.csv'
-IMAGES_DIR_PATH = '/home/snamjoshi/docker/datasets/seed_datasets_current/LL1_tidy_terra_panicle_detection/LL1_tidy_terra_panicle_detection/media/'
+IMAGES_DIR_PATH = '/home/snamjoshi/docker/datasets/seed_datasets_current/LL1_tidy_terra_panicle_detection/LL1_tidy_terra_panicle_detection_dataset/media/'
 IMAGES_DIR_PATH_AWS = '/mnt/data/datasets/datasets/seed_datasets_current/LL1_tidy_terra_panicle_detection/LL1_tidy_terra_panicle_detection_dataset/media/'
 
 # Prepare and export annotations data file
