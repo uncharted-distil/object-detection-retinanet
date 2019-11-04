@@ -22,7 +22,7 @@ import keras
 import initializers
 import layers
 from utils.anchors import AnchorParameters
-import assert_training_model
+from models import assert_training_model
 
 
 
