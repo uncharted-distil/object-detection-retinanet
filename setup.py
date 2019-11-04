@@ -1,4 +1,5 @@
 import setuptools
+import numpy
 
 from setuptools import setup
 from setuptools.extension import Extension
@@ -57,9 +58,8 @@ setup(
         ],
     },
     ext_modules       = [
-        Extension(
-        'utils.compute_overlap',
-        ['utils/compute_overlap.pyx'],
+        Extension('utils.compute_overlap', ['utils/compute_overlap.pyx'],
+                  include_dirs = [numpy.get_include()]
         ),
     ]
 )
