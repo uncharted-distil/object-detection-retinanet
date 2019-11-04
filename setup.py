@@ -27,8 +27,8 @@ setup(
     },
     ext_modules       = [
         Extension(
-        'object_detection.utils.compute_overlap',
-        ['object-detection/utils/compute_overlap.pyx'],
+        'utils.compute_overlap',
+        ['utils/compute_overlap.pyx'],
         ),
     ]
 )
