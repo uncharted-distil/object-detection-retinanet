@@ -1,13 +1,13 @@
 from setuptools import setup
 
 setup(
-    name              = 'nk_object_detection',
+    name              = 'nk-object-detection',
     version           = '0.1.0',
     description       = 'Keras implementation of RetinaNet as a D3M primitive',
     url               = 'https://github.com/NewKnowledge/object-detection',
     author            = 'Sanjeev Namjoshi',
     author_email      = 'sanjeev@yonder.co',
-    packages          = ['nk_object_detection'],
+    packages          = ['nk-object-detection'],
     install_requires  = ['keras',
                          'six',
                          'scipy',
