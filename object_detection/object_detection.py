@@ -8,16 +8,17 @@ import tensorflow as tf
 import pandas as pd
 
 from d3m.metadata import base as metadata_base, hyperparams, params
-from .. import layers  # noqa: F401
-from .. import losses
-from .. import models
-from ..callbacks import RedirectModel
-from ..callbacks.eval import Evaluate
-from ..utils.eval import evaluate
-from ..models.retinanet import retinanet_bbox
-from ..preprocessing.csv_generator import CSVGenerator
-from ..utils.anchors import make_shapes_callback
-from ..utils.model import freeze as freeze_model
+from . import layers  # noqa: F401
+from . import losses
+from . import models
+
+from .callbacks.common import RedirectModel
+from .callbacks.eval import Evaluate
+from .utils.eval import evaluate
+from .models.retinanet import retinanet_bbox
+from .preprocessing.csv_generator import CSVGenerator
+from .utils.anchors import make_shapes_callback
+from .utils.model import freeze as freeze_model
 #from ..utils.gpu import setup_gpu
 
 Inputs = container.pandas.DataFrame
