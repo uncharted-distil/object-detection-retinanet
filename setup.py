@@ -1,5 +1,6 @@
 import setuptools
 import numpy
+import os
 
 from setuptools import setup
 from setuptools.extension import Extension
@@ -29,7 +30,8 @@ class BuildExtension(setuptools.Command):
     def finalize_options(self, *args, **kwargs):
         ret = self._command.finalize_options(*args, **kwargs)
         import numpy
-        self.include_dirs.append(numpy.get_include())
+        #self.include_dirs.append(numpy.get_include())
+        self.include_dirs.append(os.path.join(np.get_include(), 'numpy'))
         return ret
 
     def run(self, *args, **kwargs):
