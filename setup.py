@@ -51,6 +51,7 @@ setup(
                          'scipy',
                          'cython>=0.28',
                          'Pillow',
+                         'progressbar2',
                          'opencv-python',
                          'numpy>=1.14.0'
                         ],
