@@ -335,7 +335,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
             all_detections[i][label] = image_detections[image_detections[:, -1] == label, :-1]
 
-    return all_detections
+        return all_detections
 
 
     def fit(self, *, timeout: float = None, iterations: int = None) -> CallResult[None]:
