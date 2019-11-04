@@ -1,4 +1,5 @@
 import setuptools
+import numpy
 
 from setuptools import setup
 from setuptools.extension import Extension
