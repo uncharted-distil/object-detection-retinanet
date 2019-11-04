@@ -7,6 +7,8 @@ import keras.preprocessing.image
 import tensorflow as tf
 import pandas as pd
 
+from d3m import container
+from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import base as metadata_base, hyperparams, params
 # from .. import layers  # noqa: F401
 # from .. import losses
