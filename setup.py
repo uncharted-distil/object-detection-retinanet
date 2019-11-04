@@ -1,4 +1,6 @@
 import setuptools
+
+from setuptools import setup
 from setuptools.extension import Extension
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
