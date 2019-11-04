@@ -1,5 +1,4 @@
 import setuptools
-import numpy
 
 from setuptools import setup
 from setuptools.extension import Extension
@@ -57,9 +56,9 @@ setup(
             'object_detection.retinanet_convolutional_neural_network = object_detection:ObjectDetectionRNPrimitive'
         ],
     },
+    include_dirs      = [numpy.get_include()],
     ext_modules       = [
         Extension('utils.compute_overlap', ['utils/compute_overlap.pyx'],
-                  include_dirs = [numpy.get_include()]
         ),
     ]
 )
