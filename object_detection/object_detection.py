@@ -300,9 +300,9 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         """
 
         for i in range(generator.size()):
-        raw_image    = generator.load_image(i)
-        image        = generator.preprocess_image(raw_image.copy())
-        image, scale = generator.resize_image(image)
+            raw_image    = generator.load_image(i)
+            image        = generator.preprocess_image(raw_image.copy())
+            image, scale = generator.resize_image(image)
 
         if keras.backend.image_data_format() == 'channels_first':
             image = image.transpose((2, 0, 1))
