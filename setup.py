@@ -18,7 +18,7 @@ setup(
                         ],
     entry_points      = {
         'd3m.primitives': [
-            'object_detection.retinanet_convolutional_neural_network = object-detection:nk-object-detection:object_detection:ObjectDetectionRNPrimitive'
+            'object_detection.retinanet_convolutional_neural_network = object_detection:ObjectDetectionRNPrimitive'
         ],
     },
 )
