@@ -1,10 +1,10 @@
 ### Running D3M locally for testing
 """
 >>> [] Separate the D3M primitive from the other RetinaNet files
->>> [] Package into a PIP installable (see: https://newknowledge.atlassian.net/wiki/spaces/data/pages/137560135/D3M+Primitive+Guide)
+>>> [X] Package into a PIP installable (see: https://newknowledge.atlassian.net/wiki/spaces/data/pages/137560135/D3M+Primitive+Guide)
 >>> [] Submit primitive?
 >>> [] Download weights 
->>> [] Set up Docker image with primitives and weights
+>>> [X] Set up Docker image with primitives and weights
 >>> [] Begin testing primitive/pipeline to correct errors
 >>> [] Final training on full data set (on Amazon instance)
 >>> [] Code review

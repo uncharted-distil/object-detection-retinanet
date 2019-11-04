@@ -15,8 +15,10 @@ limitations under the License.
 """
 
 import keras
-from .. import backend
-from ..utils import anchors as utils_anchors
+#from .. import backend
+#from ..utils import anchors as utils_anchors
+import backend
+from utils import anchors as utils_anchors
 
 import numpy as np
 
