@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import pyximport
-pyximport.install()
-
 import numpy as np
 import keras
 
 #from ..utils.compute_overlap import compute_overlap
+import pyximport
+pyximport.install()
 from utils.compute_overlap import compute_overlap
 
 

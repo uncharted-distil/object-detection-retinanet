@@ -1,4 +1,6 @@
-from setuptools import setup
+import setuptools
+from setuptools.extension import Extension
+from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
 setup(
     name              = 'object-detection',
@@ -21,4 +23,10 @@ setup(
             'object_detection.retinanet_convolutional_neural_network = object_detection:ObjectDetectionRNPrimitive'
         ],
     },
+    ext_modules       = [
+        Extension(
+        'object_detection.utils.compute_overlap',
+        ['/object-detection/utils/compute_overlap.pyx'],
+        ),
+    ]
 )
