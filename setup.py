@@ -41,6 +41,7 @@ setup(
     url               = 'https://github.com/NewKnowledge/object-detection',
     author            = 'Sanjeev Namjoshi',
     author_email      = 'sanjeev@yonder.co',
+    cmdclass          = {'build_ext': BuildExtension},
     packages          = ['object_detection'],
     install_requires  = ['keras',
                          'six',
