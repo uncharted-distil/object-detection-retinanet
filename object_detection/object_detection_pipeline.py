@@ -5,7 +5,7 @@ import sys
 
 # Create pipeline
 pipeline_description = Pipeline()
-pipeline_descripion.add_input(name = 'inputs')
+pipeline_description.add_input(name = 'inputs')
 
 # Step 0: Denormalize primitive
 step_0 = PrimitiveStep(primitive = index.get_primitive('d3m.primitives.data_transformation.denormalize.Common'))

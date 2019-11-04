@@ -51,17 +51,17 @@ class Hyperparams(hyperparams.Hyperparams):
         description = "Size of the batches as input to the model."
     )
 
-    n_epochs = hyperparams.Hyperparameter[int]{
+    n_epochs = hyperparams.Hyperparameter[int](
         default = 50,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         description = "Number of epochs to train."
-    }
+    )
 
-    freeze_backbone = hyperparams.Hyperparameter[bool]{
+    freeze_backbone = hyperparams.Hyperparameter[bool](
         default = True,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControleParameter'],
         description = "Freeze training of backbone layers."
-    }
+    )
 
     weights = hyperparams.Choice(
         choices = {
@@ -74,23 +74,23 @@ class Hyperparams(hyperparams.Hyperparams):
                      "If 'custom', then the user is expected to reference their own weight file at runtime."
     )
 
-    learning_rate = hyperparams.Hyperparameter[float]{
+    learning_rate = hyperparams.Hyperparameter[float](
         default = 1e-5,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description = "Learning rate."
-    }
+    )
 
-    n_steps = hyperparams.Hyperparameter[int]{
+    n_steps = hyperparams.Hyperparameter[int](
         default = 10000,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         description = "Number of steps/epoch."
-    }
+    )
 
-    compute_val_loss = hyperparams.Hyperparameter[bool]{
+    compute_val_loss = hyperparams.Hyperparameter[bool](
         default = True,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description = "Compute validation loss during training."
-    }
+    )
 
 
 class Params(params.Params):
@@ -122,22 +122,21 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             ],
         },
        'installation': [
-           {
+            {
                 'type': "PIP",
                 'package_uri': "" # TBD
-                ),
             },
             {
-            "type": "FILE",
-            "key": "weights",
-            "file_uri": "",   # TBD
-            "file_digest": "" # TBD 
-            },
-            ],
-            'algorithm_types': [
+                "type": "FILE",
+                "key": "weights",
+                "file_uri": "",   # TBD
+                "file_digest": "" # TBD 
+            }
+        ],
+        'algorithm_types': [
                 metadata_base.PrimitiveAlgorithmType.RETINANET_CONVOLUTIONAL_NEURAL_NETWORK 
-            ],
-            'primitive_family': metadata_base.PrimitiveFamily.OBJECT_DETECTION
+        ],
+        'primitive_family': metadata_base.PrimitiveFamily.OBJECT_DETECTION
         }
     )
  
@@ -158,7 +157,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
     def set_params(self, *, params: Params) -> None:
         self.params = params
 
-    def set_training_data(self, *, inputs: Inputs, outputs: Outputs) -> None):
+    def set_training_data(self, *, inputs: Inputs, outputs: Outputs) -> None:
         """ 
         Sets the primitive's training data and preprocesses the files for RetinaNet format.
 
@@ -365,10 +364,10 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         print('Creating model...', file = sys.__stdout__)
 
         model, training_model, prediction_model = create_models(
-            backbone_retinanet = backbone.retinanet.
-            n_classes = train_generator.num_classes()
-            weights = weights
-            freeze_backbone = self.hyperparams('freeze_backbone')
+            backbone_retinanet = backbone.retinanet,
+            n_classes = train_generator.num_classes(),
+            weights = weights,
+            freeze_backbone = self.hyperparams('freeze_backbone'),
             lr = self.hyperparams('lr')
         )
 
