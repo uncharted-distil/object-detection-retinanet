@@ -7,7 +7,7 @@ setup(
     url               = 'https://github.com/NewKnowledge/object-detection',
     author            = 'Sanjeev Namjoshi',
     author_email      = 'sanjeev@yonder.co',
-    packages          = ['object-detection'],
+    packages          = ['object_detection'],
     install_requires  = ['keras',
                          'six',
                          'scipy',
