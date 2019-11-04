@@ -15,10 +15,15 @@ limitations under the License.
 """
 
 import keras
-from .. import initializers
-from .. import layers
-from ..utils.anchors import AnchorParameters
-from . import assert_training_model
+#from .. import initializers
+#from .. import layers
+#from ..utils.anchors import AnchorParameters
+#from . import assert_training_model
+import initializers
+import layers
+from utils.anchors import AnchorParameters
+import assert_training_model
+
 
 
 def default_classification_model(
