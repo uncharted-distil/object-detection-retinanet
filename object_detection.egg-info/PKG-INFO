@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: object-detection
+Version: 0.1.0
+Summary: Keras implementation of RetinaNet as a D3M primitive
+Home-page: https://github.com/NewKnowledge/object-detection
+Author: Sanjeev Namjoshi
+Author-email: sanjeev@yonder.co
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN

@@ -1,12 +1,11 @@
 ### Running D3M locally for testing
 """
->>> [] Separate the D3M primitive from the other RetinaNet files
 >>> [X] Package into a PIP installable (see: https://newknowledge.atlassian.net/wiki/spaces/data/pages/137560135/D3M+Primitive+Guide)
->>> [] Submit primitive?
->>> [] Download weights 
->>> [X] Set up Docker image with primitives and weights
+>>> [X] Set up Docker image with primitives
 >>> [] Begin testing primitive/pipeline to correct errors
+>>> [] Set up Docker image with weights
 >>> [] Final training on full data set (on Amazon instance)
+>>> [] Separate the D3M primitive from the other RetinaNet files
 >>> [] Code review
 """
 
@@ -147,3 +146,50 @@ weights = hyperparams.Hyperparameter[str]{
     description = "If 'image_net' (default), initializes the model with pretrained imagenet weights" +
                     "If 'custom', then the user is expected to reference their own weight file at runtime."
 }
+
+# class Hyperparams(hyperparams.Hyperparams):
+#     backbone = hyperparams.Choice(
+#         choices = {
+#             'densenet121': hyperparams.Hyperparams[None](default = None),
+#             'densenet169': hyperparams.Hyperparams[None](default = None),
+#             'densenet201': hyperparams.Hyperparams[None](default = None),
+#             'mobilenet128': hyperparams.Hyperparams[None](default = None),
+#             'mobilenet160': hyperparams.Hyperparams[None](default = None),
+#             'mobilenet192': hyperparams.Hyperparams[None](default = None),
+#             'mobilenet224': hyperparams.Hyperparams[None](default = None),
+#             'resnet50': hyperparams.Hyperparams[None](default = None),
+#             'resnet101': hyperparams.Hyperparams[None](default = None),
+#             'resnet152': hyperparams.Hyperparams[None](default = None),
+#             'vgg16': hyperparams.Hyperparams[None](default = None),
+#             'vgg19': hyperparams.Hyperparams[None](default = None)
+#         },
+#         default = 'resnet50',
+#         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+#         description = "Backbone architecture from which RetinaNet is built. All models " +
+#                       "requires a weights file downloaded for use during runtime."
+#     )
+
+
+    # weights = hyperparams.Choice(
+    #     choices = {
+    #         'imagenet': hyperparams.Hyperparams[None](default = None),
+    #         'custom': hyperparams.Hyperparams[None](default = None),
+    #         'none': hyperparams.Hyperparams[None](default = None)
+    #     },
+    #     default = 'image_net',
+    #     semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+    #     description = "If 'imagenet' (default), initializes the model with pretrained imagenet weights" +
+    #                  "If 'custom', then the user is expected to reference their own weight file at runtime."
+    # )
+
+# from .. import layers  # noqa: F401
+# from .. import losses
+# from .. import models
+# from ..callbacks import RedirectModel
+# from ..callbacks.eval import Evaluate
+# from ..utils.eval import evaluate
+# from ..models.retinanet import retinanet_bbox
+# from ..preprocessing.csv_generator import CSVGenerator
+# from ..utils.anchors import make_shapes_callback
+# from ..utils.model import freeze as freeze_model
+#from ..utils.gpu import setup_gpu
