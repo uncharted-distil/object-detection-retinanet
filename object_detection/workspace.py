@@ -193,3 +193,16 @@ weights = hyperparams.Hyperparameter[str]{
 # from ..utils.anchors import make_shapes_callback
 # from ..utils.model import freeze as freeze_model
 #from ..utils.gpu import setup_gpu
+
+'installation': [
+            {
+                'type': 'PIP',
+                'package_uri': 'pip3 install -e git+https://github.com/NewKnowledge/object-detection#egg=object-detection'
+            },
+            {
+            'type': "FILE",
+            'key': "weights"
+            #'file_uri': "",   # TBD
+            #'file_digest': "" # TBD 
+            }
+        ],

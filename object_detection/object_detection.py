@@ -198,14 +198,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         },
        'installation': [
             {
-                'type': 'PIP'
-                #'package_uri': "" # TBD
-            },
-            {
-            'type': "FILE",
-            'key': "weights"
-            #'file_uri': "",   # TBD
-            #'file_digest': "" # TBD 
+                'type': 'PIP',
+                'package_uri': 'pip3 install -e git+https://github.com/NewKnowledge/object-detection#egg=object-detection'
             }
         ],
         #'algorithm_types': [metadata_base.PrimitiveAlgorithmType.RETINANET_CONVOLUTIONAL_NEURAL_NETWORK],
