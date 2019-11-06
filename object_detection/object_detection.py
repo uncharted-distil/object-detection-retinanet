@@ -200,7 +200,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             {
                 'type': 'PIP',
                 'package_uri': 'git+https://github.com/NewKnowledge/object-detection.git@{git_commit}#egg=object-detection'.format(
-                    git_commit=utils.current_git_commit(os.path.dirname(__file__))'
+                    git_commit=utils.current_git_commit(os.path.dirname(__file__)),)
             }
         ],
         #'algorithm_types': [metadata_base.PrimitiveAlgorithmType.RETINANET_CONVOLUTIONAL_NEURAL_NETWORK],
