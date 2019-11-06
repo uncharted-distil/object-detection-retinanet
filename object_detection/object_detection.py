@@ -15,7 +15,7 @@ import models
 
 from collections import OrderedDict
 
-from d3m import container
+from d3m import container, utils
 from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import base as metadata_base, hyperparams, params
 from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
@@ -199,7 +199,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
        'installation': [
             {
                 'type': 'PIP',
-                'package_uri': 'pip3 install -e git+https://github.com/NewKnowledge/object-detection#egg=object-detection'
+                'package_uri': 'git+https://github.com/NewKnowledge/object-detection.git@{git_commit}#egg=object-detection'.format(
+                    git_commit=utils.current_git_commit(os.path.dirname(__file__))'
             }
         ],
         #'algorithm_types': [metadata_base.PrimitiveAlgorithmType.RETINANET_CONVOLUTIONAL_NEURAL_NETWORK],
