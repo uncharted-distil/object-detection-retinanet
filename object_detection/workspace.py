@@ -206,3 +206,7 @@ weights = hyperparams.Hyperparameter[str]{
             #'file_digest': "" # TBD 
             }
         ],
+
+
+
+print(self.annotations, file = sys.__stdout__)        

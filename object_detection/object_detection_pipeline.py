@@ -21,13 +21,13 @@ step_1.add_output('produce')
 pipeline_description.add_step(step_1)
 
 # Step 2: RetinaNet primitive
-step_2 = PrimitiveStep(primitive = index.get_primitive('d3m.primitives.object_detection.ObjectDetectionRNPrimitive'))
+step_2 = PrimitiveStep(primitive = index.get_primitive('d3m.primitives.object_detection.retinanet_convolutional_neural_network'))
 step_2.add_argument(name = 'inputs', argument_type = ArgumentType.CONTAINER, data_reference = 'steps.1.produce')
 step_2.add_argument(name = 'outputs', argument_type = ArgumentType.CONTAINER, data_reference = 'steps.1.produce')
 step_2.add_output('produce')
 pipeline_description.add_step(step_2)
 
-pipeline_description.add_output(name = 'output_predictions', data_references = 'steps.2.produce')
+pipeline_description.add_output(name = 'output_predictions', data_reference = 'steps.2.produce')
 
 # Output JSON pipeline
 blob = pipeline_description.to_json()
@@ -41,8 +41,8 @@ dataset = sys.argv[1]
 with open(metafile, 'w') as outfile:
     outfile.write('{')
     outfile.write(f'"problem": "{dataset}_problem",')
-    outfile.write(f'"full_inputs": ["{datasets}_dataset"],')
+    outfile.write(f'"full_inputs": ["{dataset}_dataset"],')
     outfile.write(f'"train_inputs": ["{dataset}_dataset_TRAIN"],')
     outfile.write(f'"test_inputs": ["{dataset}_dataset_TEST"],')
-    outfile.write(f'"score_inputs": ["{datasets}_dataset_SCORE"]')
+    outfile.write(f'"score_inputs": ["{dataset}_dataset_SCORE"]')
     outfile.write('}')

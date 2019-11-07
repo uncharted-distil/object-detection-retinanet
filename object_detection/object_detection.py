@@ -21,6 +21,7 @@ from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import base as metadata_base, hyperparams, params
 from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
 from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame
+from common_primitives import denormalize as Denormalize
 
 from callbacks import RedirectModel
 from callbacks.eval import Evaluate
@@ -254,7 +255,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         ## Generate image paths
         image_cols = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/FileName')
         self.base_dir = [inputs.metadata.query((metadata_base.ALL_ELEMENTS, t))['location_base_uris'][0].replace('file:///', '/') for t in image_cols]
-        self.image_paths = np.array([[os.path.join(base_dir, filename) for filename in inputs.iloc[:,col]] for base_dir, col in zip(base_dir, image_cols)]).flatten()
+        self.image_paths = np.array([[os.path.join(self.base_dir, filename) for filename in inputs.iloc[:,col]] for self.base_dir, col in zip(self.base_dir, image_cols)]).flatten()
+        self.image_paths = pd.Series(self.image_paths)
 
         ## Arrange proper bounding coordinates
         bounding_coords = inputs.bounding_box.str.split(',', expand = True)
@@ -263,16 +265,15 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         bounding_coords = bounding_coords[['x1', 'y1', 'x2', 'y2']]
 
         ## Generate class names
-        class_name = pd.Series(['class'] * input.shape[0])
+        class_name = pd.Series(['class'] * inputs.shape[0])
 
         ## Assemble annotation file
         self.annotations = pd.concat([self.image_paths, bounding_coords, class_name], axis = 1)
-        self.annotation.columns = ['img_file', 'x1', 'y1', 'x2', 'y2', 'class_name']
+        self.annotations.columns = ['img_file', 'x1', 'y1', 'x2', 'y2', 'class_name']
 
         # Prepare ID file
         self.classes = pd.DataFrame({'class_name': ['class'], 
                                      'class_id': [0]})
-
 
     def _create_callbacks(self, model, training_model, prediction_model, validation_generator):
         """
@@ -534,18 +535,28 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         
         return CallResult(results_df)
 
-if __name__ == '__main__':
-    # Load data and preprocessing
-    volumes = {}
-    volumes["imagenet_weights"] = '/root/ResNet-50-model.keras.h5'
-    client = ObjectDetectionRNPrimitive(hyperparams = {}, volumes = volumes)
-    input_dataset = container.Dataset.load("file:///datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/TRAIN/dataset_TRAIN/datasetDoc.json")
-    ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = {"dataframe_resource":"0"})
-    df = d3m_DataFrame(ds2df_client.produce(inputs = input_dataset).value)
-    client.__init__(hyperparams = {})
-    client.set_training_data(inputs = df, outputs = None)
-    result = client.produce(inputs = df)
-    print(result.value)   
+# if __name__ == '__main__':
+#     # Load volumes
+#     volumes = {}
+#     volumes["imagenet_weights"] = '/root/ResNet-50-model.keras.h5'
+#     client = ObjectDetectionRNPrimitive(hyperparams = {}, volumes = volumes)
+
+#     # Load and process dataset
+#     input_dataset = container.Dataset.load("file:///datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/TRAIN/dataset_TRAIN/datasetDoc.json")
+#     #hyperparams_class = Denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
+#     #denorm_client = Denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
+#     denorm_client = Denormalize.DenormalizePrimitive(hyperparams = {})
+
+#     ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = {"dataframe_resource":"learningData"})
+#     dataset_meta = d3m_DataFrame(denorm_client.produce(inputs = input_dataset).value)
+#     df = d3m_DataFrame(ds2df_client.produce(inputs = dataset_meta).value)
+    
+#     # Process training data
+#     client.set_training_data(inputs = df, outputs = None)
+    
+#     # Fit, produce, and output
+#     result = client.produce(inputs = df)
+#     print(result.value)   
 
 # if __name__ == '__main__'
 #     # Load data and preprocessing
