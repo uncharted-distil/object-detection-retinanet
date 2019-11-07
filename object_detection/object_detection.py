@@ -2,12 +2,13 @@ import os
 import sys
 import warnings
 import typing
-import logging
+#import logging
 
 import keras
 import keras.preprocessing.image
 import tensorflow as tf
 import pandas as pd
+import numpy as np
 
 import layers  
 import losses
@@ -19,6 +20,7 @@ from d3m import container, utils
 from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import base as metadata_base, hyperparams, params
 from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
+from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame
 
 from callbacks import RedirectModel
 from callbacks.eval import Evaluate
@@ -31,76 +33,74 @@ from utils.model import freeze as freeze_model
 Inputs = container.pandas.DataFrame
 Outputs = container.pandas.DataFrame
 
-logger = logging.getLogger(__name__)
-print(__name__)
-print(logger)
+#logger = logging.getLogger(__name__)
 
 class Hyperparams(hyperparams.Hyperparams):
     backbone = hyperparams.Union(
         OrderedDict({
             'densenet121': hyperparams.Constant[str](
                 default = 'densenet121',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from densenet121 architecture (https://arxiv.org/abs/1608.06993)"
             ),
             'densenet169': hyperparams.Constant[str](
                 default = 'densenet169',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from densenet169 architecture (https://arxiv.org/abs/1608.06993)"
             ),
             'densenet201': hyperparams.Constant[str](
                 default = 'densenet201',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from densenet201 architecture (https://arxiv.org/abs/1608.06993)"
             ),
             'mobilenet128': hyperparams.Constant[str](
                 default = 'mobilenet128',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from mobilenet128 architecture (https://arxiv.org/abs/1704.04861)"
             ),
             'mobilenet160': hyperparams.Constant[str](
                 default = 'mobilenet160',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from mobilenet160 architecture (https://arxiv.org/abs/1704.04861)"
             ),
             'mobilenet192': hyperparams.Constant[str](
                 default = 'mobilenet192',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from mobilenet192 architecture (https://arxiv.org/abs/1704.04861)"
             ),
             'mobilenet224': hyperparams.Constant[str](
                 default = 'mobilenet224',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from mobilenet224 architecture (https://arxiv.org/abs/1704.04861)"
             ),
             'resnet50': hyperparams.Constant[str](
                 default = 'resnet50',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from resnet50 architecture (https://arxiv.org/abs/1512.03385)"
             ),
             'resnet101': hyperparams.Constant[str](
                 default = 'resnet101',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from resnet101 architecture (https://arxiv.org/abs/1512.03385)"
             ),
             'resnet152': hyperparams.Constant[str](
                 default = 'resnet152',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from resnet152 architecture (https://arxiv.org/abs/1512.03385)"
             ),
             'vgg16': hyperparams.Constant[str](
                 default = 'vgg16',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from vgg16 architecture (https://arxiv.org/abs/1409.1556)"
             ),
             'vgg19': hyperparams.Constant[str](
                 default = 'vgg19',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from vgg19 architecture (https://arxiv.org/abs/1409.1556)"
             )
         }),
         default = 'resnet50',
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+        semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         description = "Backbone architecture from which RetinaNet is built. All models " +
                       "requires a weights file downloaded for use during runtime."
     )
@@ -116,29 +116,29 @@ class Hyperparams(hyperparams.Hyperparams):
     )
     freeze_backbone = hyperparams.Hyperparameter[bool](
         default = True,
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControleParameter'],
+        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description = "Freeze training of backbone layers."
     )
     weights = hyperparams.Union(
         OrderedDict({
             'custom': hyperparams.Constant[str](
                 default = 'custom',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Initializes model with user-specified custom weights."
             ),
             'imagenet': hyperparams.Constant[str](
                 default = 'imagenet',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Initializes model with pretrained imagenet weights."
             ),
             'no_weights': hyperparams.Constant[str](
                 default = 'no_weights',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Do not initialize the model with any weights."
             )
         }),
         default = 'imagenet',
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ChoiceParameter'],
+        semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         description = "Backbone architecture from which RetinaNet is built. All models " +
                       "requires a weights file downloaded for use during runtime."
     )
@@ -188,12 +188,13 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         'id': 'd921be1e-b158-4ab7-abb3-cb1b17f42639',
         'version': '0.1.0',
         'name': 'retina_net',
+        'python_path': 'd3m.primitives.object_detection.retinanet_convolutional_neural_network',
         'keywords': ['object detection', 'convolutional neural network', 'digital image processing', 'RetinaNet'],
         'source': {
             'name': 'Sanjeev Namjoshi',
-            'contact': 'sanjeev@yonder.co',
+            'contact': 'mailto:sanjeev@yonder.co',
             'uris': [
-                'https://github.com/NewKnowledge/object-detection',
+                'https://github.com/NewKnowledge/object-detection'
             ],
         },
        'installation': [
@@ -202,6 +203,12 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                 'package_uri': 'git+https://github.com/NewKnowledge/object-detection.git@{git_commit}#egg=object-detection'.format(
                     git_commit=utils.current_git_commit(os.path.dirname(__file__)),)
             }
+            # {
+            # 'type': "FILE",
+            # 'key': "weights"
+            # 'file_uri': "",   # TBD
+            # 'file_digest': "" # TBD 
+            # }
         ],
         #'algorithm_types': [metadata_base.PrimitiveAlgorithmType.RETINANET_CONVOLUTIONAL_NEURAL_NETWORK],
         #'algorithm_types': [metadata_base.PrimitiveAlgorithmType.NEURAL_NETWORK_BACKPROPAGATION],
@@ -213,7 +220,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
     )
  
     def __init__(self, *, hyperparams: Hyperparams, volumes: typing.Dict[str,str] = None) -> None:
-        super().__init__(hyperparams = hyperparams)
+        super().__init__(hyperparams = hyperparams, volumes = volumes)
         self.image_paths = None
         self.annotations = None
         self.base_dir = None
@@ -267,7 +274,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                                      'class_id': [0]})
 
 
-    def create_callbacks(self, model, training_model, prediction_model, validation_generator):
+    def _create_callbacks(self, model, training_model, prediction_model, validation_generator):
         """
         Creates the callbacks to use during training.
 
@@ -298,7 +305,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         return callbacks
 
     
-    def create_models(self, backbone_retinanet, num_classes, weights, multi_gpu = 0, 
+    def _create_models(self, backbone_retinanet, num_classes, weights, multi_gpu = 0, 
                       freeze_backbone = False, lr = 1e-5, config = None):
                       
         """ 
@@ -337,14 +344,14 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         return model, training_model, prediction_model
     
-    def num_classes(self):
+    def _num_classes(self):
         """ 
         Number of classes in the dataset.
         """
         return max(self.classes.values()) + 1
 
 
-    def create_generator(self, args):
+    def _create_generator(self, args):
         """
         Create generator for evaluation.
         """
@@ -353,7 +360,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         return validation_generator
 
 
-    def evaluate_model(self, generator, model, iou_threshold, score_threshold, max_detections):
+    def _evaluate_model(self, generator, model, iou_threshold, score_threshold, max_detections):
         """ 
         Evaluate a given dataset using a given model.
 
@@ -368,7 +375,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         
         Returns
         -------
-        all_dtections   : A list containing the predicted boxes for each image in the generator.
+        all_detections   : A list containing the predicted boxes for each image in the generator.
         """
 
         for i in range(generator.size()):
@@ -504,7 +511,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         max_detections = 100    # Maxmimum number of detections to use per image
         
         # create the generator
-        generator = create_generator(self.annotations, self.classes, shuffle_groups = False)
+        generator = _create_generator(self.annotations, self.classes, shuffle_groups = False)
 
         # load the model
         print('Loading model...')
@@ -529,14 +536,14 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
 if __name__ == '__main__':
     # Load data and preprocessing
-    print("TEST")
-    print(logger)
     volumes = {}
     volumes["imagenet_weights"] = '/root/ResNet-50-model.keras.h5'
-    #client = ObjectDetectionRNPrimitive(volumes = volumes)
-    input_dataset = container.Dataset.load("file:///home/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/TRAIN/dataset_TRAIN/datasetDoc.json")
+    client = ObjectDetectionRNPrimitive(hyperparams = {}, volumes = volumes)
+    input_dataset = container.Dataset.load("file:///datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/TRAIN/dataset_TRAIN/datasetDoc.json")
     ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = {"dataframe_resource":"0"})
-    df = d3m_DataFrame(ds2df_client.produce(inputs = input_dataset).value) 
+    df = d3m_DataFrame(ds2df_client.produce(inputs = input_dataset).value)
+    client.__init__(hyperparams = {})
+    client.set_training_data(inputs = df, outputs = None)
     result = client.produce(inputs = df)
     print(result.value)   
 
