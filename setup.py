@@ -47,7 +47,7 @@ setup(
     #cmdclass          = {'build_ext': BuildExtension},
     packages          = ['object_detection'],
     install_requires  = ['keras',
-                         'keras-resnet=0.1.0'
+                         'keras-resnet==0.1.0',
                          'six',
                          'scipy',
                          'cython>=0.28',

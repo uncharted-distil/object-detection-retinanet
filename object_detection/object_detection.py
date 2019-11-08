@@ -203,11 +203,18 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                 'type': 'PIP',
                 'package_uri': 'git+https://github.com/NewKnowledge/object-detection.git@{git_commit}#egg=object-detection'.format(
                     git_commit=utils.current_git_commit(os.path.dirname(__file__)),)
-            }
+            },
+            {
+            'type': "FILE",
+            'key': "imagenet_weights",
+            #'file_uri': "~/ResNet-50-model.keras.h5",
+            'file_uri': "https://github.com/fizyr/keras-models/releases/download/v0.0.1/ResNet-50-model.keras.h5",   # TBD
+            'file_digest': "0128cdfa3963288110422e4c1a57afe76aa0d760eb706cda4353ef1432c31b9c" # TBD 
+            }#,
             # {
             # 'type': "FILE",
-            # 'key': "weights"
-            # 'file_uri': "",   # TBD
+            # 'key': "custom_weights",
+            # 'file_uri': "~/ResNet-50-model.keras.h5",   # TBD
             # 'file_digest': "" # TBD 
             # }
         ],
@@ -332,7 +339,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         anchor_params = None
         num_anchors   = None
 
-        model = model_with_weights(backbone_retinanet(num_classes, num_anchors = num_anchors, modifier = modifier), weights = weights, skip_mismatch = True)
+        model = self._model_with_weights(backbone_retinanet(num_classes, num_anchors = num_anchors, modifier = modifier), weights = weights, skip_mismatch = True)
         training_model = model
         prediction_model = retinanet_bbox(model = model, anchor_params = anchor_params)
         training_model.compile(
@@ -351,6 +358,24 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         """
         return max(self.classes.values()) + 1
 
+    def _model_with_weights(model, weights, skip_mismatch):
+        """ 
+        Load weights for model.
+
+        Parameters
+        ----------
+            model         : The model to load weights for.
+            weights       : The weights to load.
+            skip_mismatch : If True, skips layers whose shape of weights doesn't match with the model.
+
+        Returns
+        -------
+            model         : Model with loaded weights.
+        """
+
+        if weights is not None:
+            model.load_weights(weights, by_name = True, skip_mismatch = skip_mismatch)
+        return model
 
     def _create_generator(self, args):
         """
@@ -417,7 +442,6 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         return all_detections
 
-
     def fit(self, *, timeout: float = None, iterations: int = None) -> CallResult[None]:
         """
         Creates the image generators and then trains RetinaNet model on the image paths in the input 
@@ -432,31 +456,31 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         backbone = models.backbone(self.hyperparams['backbone'])
 
         # Create the generators
-        train_generator, validation_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], backbone.preprocess_image)
-
+        train_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], backbone.preprocess_image)
+        
         # Create the model
         ## Assign weights
         ## [] Check for weights! If missing, envoke error
         if self.hyperparams['weights'] == 'custom':
-            weights = custom_weights
+            weights = self.volumes["custom_weights"]
         elif self.hyperparams['weights'] == 'no_weights':
             weights = None
         else:
-            weights = self.volumes["weights"]
+            weights = self.volumes["imagenet_weights"]
 
         print('Creating model...', file = sys.__stdout__)
 
-        model, training_model, prediction_model = create_models(
+        model, training_model, prediction_model = self._create_models(
             backbone_retinanet = backbone.retinanet,
-            n_classes = train_generator.num_classes(),
+            num_classes = train_generator.num_classes(),
             weights = weights,
-            freeze_backbone = self.hyperparams('freeze_backbone'),
-            lr = self.hyperparams('lr')
+            freeze_backbone = self.hyperparams['freeze_backbone'],
+            lr = self.hyperparams['learning_rate']
         )
 
         print(model.summary(), file = sys.__stdout__)
 
-        if self.hyperparams is False:
+        if self.hyperparams[''] is False:
             validation_generator = None
 
         ## Let the generator compute the backbone layer shapes using the actual backbone model

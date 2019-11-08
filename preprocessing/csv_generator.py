@@ -125,6 +125,8 @@ class CSVGenerator(Generator):
         annotation_df,
         classes_df,
         base_dir,
+        batch_size,
+        backbone,
         **kwargs
     ):
         """ Initialize a CSV data generator.
@@ -140,7 +142,7 @@ class CSVGenerator(Generator):
         self.base_dir    = base_dir
 
         # Parse annotations
-        annotations_dict = OrderedDict()
+        annotation_dict = OrderedDict()
 
         for index, row in annotation_df.iterrows():
             img_file, x1, y1, x2, y2, class_name = row[:6]
@@ -149,14 +151,14 @@ class CSVGenerator(Generator):
                 annotation_dict[img_file] = []
                 
             annotation_dict[img_file].append({'x1': x1, 'x2': x2, 'y1': y1, 'y2': y2, 'class': class_name})
-                
+
         # Parse classes
         classes_dict = OrderedDict()
 
         for index, row in classes_df.iterrows():
             class_name, class_id = row
             classes_dict[class_name] = class_id
-        
+    
         # Create image data
         self.image_data = annotation_dict
         self.image_names = list(self.image_data.keys())
@@ -165,7 +167,7 @@ class CSVGenerator(Generator):
         self.classes = classes_dict
         self.labels = {}
         for key, value in self.classes.items():
-            self.lables[value] = key
+            self.labels[value] = key
         
         self.base_dir = base_dir
 
