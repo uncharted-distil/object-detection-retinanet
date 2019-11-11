@@ -2,7 +2,7 @@ import os
 import sys
 import warnings
 import typing
-#import logging
+import time
 
 import keras
 import keras.preprocessing.image
@@ -34,46 +34,9 @@ from utils.model import freeze as freeze_model
 Inputs = container.pandas.DataFrame
 Outputs = container.pandas.DataFrame
 
-#logger = logging.getLogger(__name__)
-
 class Hyperparams(hyperparams.Hyperparams):
     backbone = hyperparams.Union(
         OrderedDict({
-            'densenet121': hyperparams.Constant[str](
-                default = 'densenet121',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Backbone architecture from densenet121 architecture (https://arxiv.org/abs/1608.06993)"
-            ),
-            'densenet169': hyperparams.Constant[str](
-                default = 'densenet169',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Backbone architecture from densenet169 architecture (https://arxiv.org/abs/1608.06993)"
-            ),
-            'densenet201': hyperparams.Constant[str](
-                default = 'densenet201',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Backbone architecture from densenet201 architecture (https://arxiv.org/abs/1608.06993)"
-            ),
-            'mobilenet128': hyperparams.Constant[str](
-                default = 'mobilenet128',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Backbone architecture from mobilenet128 architecture (https://arxiv.org/abs/1704.04861)"
-            ),
-            'mobilenet160': hyperparams.Constant[str](
-                default = 'mobilenet160',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Backbone architecture from mobilenet160 architecture (https://arxiv.org/abs/1704.04861)"
-            ),
-            'mobilenet192': hyperparams.Constant[str](
-                default = 'mobilenet192',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Backbone architecture from mobilenet192 architecture (https://arxiv.org/abs/1704.04861)"
-            ),
-            'mobilenet224': hyperparams.Constant[str](
-                default = 'mobilenet224',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Backbone architecture from mobilenet224 architecture (https://arxiv.org/abs/1704.04861)"
-            ),
             'resnet50': hyperparams.Constant[str](
                 default = 'resnet50',
                 semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
@@ -88,22 +51,12 @@ class Hyperparams(hyperparams.Hyperparams):
                 default = 'resnet152',
                 semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
                 description = "Backbone architecture from resnet152 architecture (https://arxiv.org/abs/1512.03385)"
-            ),
-            'vgg16': hyperparams.Constant[str](
-                default = 'vgg16',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Backbone architecture from vgg16 architecture (https://arxiv.org/abs/1409.1556)"
-            ),
-            'vgg19': hyperparams.Constant[str](
-                default = 'vgg19',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Backbone architecture from vgg19 architecture (https://arxiv.org/abs/1409.1556)"
             )
         }),
         default = 'resnet50',
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-        description = "Backbone architecture from which RetinaNet is built. All models " +
-                      "requires a weights file downloaded for use during runtime."
+        description = "Backbone architecture from which RetinaNet is built. All backbones " +
+                      "require a weights file downloaded for use during runtime."
     )
     batch_size = hyperparams.Hyperparameter[int](
         default = 1,
@@ -111,7 +64,7 @@ class Hyperparams(hyperparams.Hyperparams):
         description = "Size of the batches as input to the model."
     )
     n_epochs = hyperparams.Hyperparameter[int](
-        default = 50,
+        default = 1,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         description = "Number of epochs to train."
     )
@@ -120,28 +73,10 @@ class Hyperparams(hyperparams.Hyperparams):
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
         description = "Freeze training of backbone layers."
     )
-    weights = hyperparams.Union(
-        OrderedDict({
-            'custom': hyperparams.Constant[str](
-                default = 'custom',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Initializes model with user-specified custom weights."
-            ),
-            'imagenet': hyperparams.Constant[str](
-                default = 'imagenet',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Initializes model with pretrained imagenet weights."
-            ),
-            'no_weights': hyperparams.Constant[str](
-                default = 'no_weights',
-                semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-                description = "Do not initialize the model with any weights."
-            )
-        }),
-        default = 'imagenet',
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
-        description = "Backbone architecture from which RetinaNet is built. All models " +
-                      "requires a weights file downloaded for use during runtime."
+    weights = hyperparams.Hyperparameter[bool](
+        default = True,
+        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
+        description = "Load the model with pretrained weights specific to selected backbone."
     )
     learning_rate = hyperparams.Hyperparameter[float](
         default = 1e-5,
@@ -149,22 +84,16 @@ class Hyperparams(hyperparams.Hyperparams):
         description = "Learning rate."
     )
     n_steps = hyperparams.Hyperparameter[int](
-        default = 10000,
+        default = 1,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         description = "Number of steps/epoch."
     )
-    compute_val_loss = hyperparams.Hyperparameter[bool](
-        default = True,
+    output = hyperparams.Hyperparameter[bool](
+        default = False,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-        description = "Compute validation loss during training."
-    )
-    output_path = hyperparams.Hyperparameter[str](
-        default = "no_output",
-        semantic_types = ['https://metadata.datadrivendiscovery.org/types/ControlParameter'],
-        description = "Optional output path for images with predicted bounding boxes."
+        description = "Output images and predicted bounding boxes after evaluation."
     )
 
-# output-images
 # score-threshold [?]
 # iou-threshold [?]
 # max-detections [?]
@@ -202,27 +131,18 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             {
                 'type': 'PIP',
                 'package_uri': 'git+https://github.com/NewKnowledge/object-detection.git@{git_commit}#egg=object-detection'.format(
-                    git_commit=utils.current_git_commit(os.path.dirname(__file__)),)
+                    git_commit = utils.current_git_commit(os.path.dirname(__file__)),)
             },
             {
             'type': "FILE",
-            'key': "imagenet_weights",
-            #'file_uri': "~/ResNet-50-model.keras.h5",
-            'file_uri': "https://github.com/fizyr/keras-models/releases/download/v0.0.1/ResNet-50-model.keras.h5",   # TBD
+            'key': "resnet50",
+            'file_uri': "http://public.datadrivendiscovery.org/ResNet-50-model.keras.h5",
             'file_digest': "0128cdfa3963288110422e4c1a57afe76aa0d760eb706cda4353ef1432c31b9c" # TBD 
-            }#,
-            # {
-            # 'type': "FILE",
-            # 'key': "custom_weights",
-            # 'file_uri': "~/ResNet-50-model.keras.h5",   # TBD
-            # 'file_digest': "" # TBD 
-            # }
+            }
         ],
         #'algorithm_types': [metadata_base.PrimitiveAlgorithmType.RETINANET_CONVOLUTIONAL_NEURAL_NETWORK],
-        #'algorithm_types': [metadata_base.PrimitiveAlgorithmType.NEURAL_NETWORK_BACKPROPAGATION],
         'algorithm_types': [metadata_base.PrimitiveAlgorithmType.CONVOLUTIONAL_NEURAL_NETWORK],
         #'primitive_family': metadata_base.PrimitiveFamily.OBJECT_DETECTION
-        #'primitive_family': metadata_base.PrimitiveFamily.LEARNER
         'primitive_family': metadata_base.PrimitiveFamily.DIGITAL_IMAGE_PROCESSING,
         }
     )
@@ -233,7 +153,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         self.annotations = None
         self.base_dir = None
         self.classes = None
-        self.training_model = None
+        self.backbone = None
+        self.y_true = None
         self.workers = 1
         self.multiprocessing = 1
         self.max_queue_size = 10
@@ -265,6 +186,9 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         self.image_paths = np.array([[os.path.join(self.base_dir, filename) for filename in inputs.iloc[:,col]] for self.base_dir, col in zip(self.base_dir, image_cols)]).flatten()
         self.image_paths = pd.Series(self.image_paths)
 
+        ## Prepare y_true
+        self.y_true = #
+
         ## Arrange proper bounding coordinates
         bounding_coords = inputs.bounding_box.str.split(',', expand = True)
         bounding_coords = bounding_coords.drop(bounding_coords.columns[[2, 5, 6, 7]], axis = 1)
@@ -282,7 +206,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         self.classes = pd.DataFrame({'class_name': ['class'], 
                                      'class_id': [0]})
 
-    def _create_callbacks(self, model, training_model, prediction_model, validation_generator):
+    def _create_callbacks(self, model, training_model, prediction_model):
         """
         Creates the callbacks to use during training.
 
@@ -311,11 +235,9 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         ))
 
         return callbacks
-
     
-    def _create_models(self, backbone_retinanet, num_classes, weights, multi_gpu = 0, 
-                      freeze_backbone = False, lr = 1e-5, config = None):
-                      
+    def _create_models(self, backbone_retinanet, num_classes, weights, freeze_backbone = False, lr = 1e-5):
+        
         """ 
         Creates three models (model, training_model, prediction_model).
 
@@ -358,7 +280,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         """
         return max(self.classes.values()) + 1
 
-    def _model_with_weights(model, weights, skip_mismatch):
+    def _model_with_weights(self, model, weights, skip_mismatch):
         """ 
         Load weights for model.
 
@@ -377,16 +299,16 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             model.load_weights(weights, by_name = True, skip_mismatch = skip_mismatch)
         return model
 
-    def _create_generator(self, args):
+    def _create_generator(self, annotations, classes, shuffle_groups):
         """
         Create generator for evaluation.
         """
 
-        validation_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], backbone.preprocess_image, shuffle_groups = False)
+        validation_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], self.backbone.preprocess_image, shuffle_groups = False)
         return validation_generator
 
 
-    def _evaluate_model(self, generator, model, iou_threshold, score_threshold, max_detections):
+    def _evaluate_model(self, generator, model, iou_threshold, score_threshold, max_detections, save_path):
         """ 
         Evaluate a given dataset using a given model.
 
@@ -404,6 +326,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         all_detections   : A list containing the predicted boxes for each image in the generator.
         """
 
+        all_detections = [[None for i in range(generator.num_classes()) if generator.has_label(i)] for j in range(generator.size())]
+
         for i in range(generator.size()):
             raw_image    = generator.load_image(i)
             image        = generator.preprocess_image(raw_image.copy())
@@ -413,7 +337,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             image = image.transpose((2, 0, 1))
 
         # run network
-        boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
+        boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis = 0))[:3]
 
         # correct boxes for image scale
         boxes /= scale
@@ -431,8 +355,14 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         image_boxes      = boxes[0, indices[scores_sort], :]
         image_scores     = scores[scores_sort]
         image_labels     = labels[0, indices[scores_sort]]
-        image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
+        image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis = 1), np.expand_dims(image_labels, axis = 1)], axis = 1)
 
+        if save_path is True:
+            draw_annotations(raw_image, generator.load_annotations(i), label_to_name = generator.label_to_name)
+            draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name = generator.label_to_name, score_threshold = score_threshold)
+
+            cv2.imwrite(os.path.join(save_path, '{}.png'.format(i)), raw_image)
+        
         # copy detections to all_detections
         for label in range(generator.num_classes()):
             if not generator.has_label(label):
@@ -453,44 +383,45 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         """
 
         # Create object that stores backbone information
-        backbone = models.backbone(self.hyperparams['backbone'])
+        self.backbone = models.backbone(self.hyperparams['backbone'])
 
         # Create the generators
-        train_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], backbone.preprocess_image)
-        
-        # Create the model
+        train_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], self.backbone.preprocess_image)
+
+        # Running the model
         ## Assign weights
-        ## [] Check for weights! If missing, envoke error
-        if self.hyperparams['weights'] == 'custom':
-            weights = self.volumes["custom_weights"]
-        elif self.hyperparams['weights'] == 'no_weights':
+        if self.hyperparams['weights'] is False:
             weights = None
         else:
-            weights = self.volumes["imagenet_weights"]
+            weights = self.volumes[self.hyperparams['backbone']]
 
+        ## Create model
         print('Creating model...', file = sys.__stdout__)
 
-        model, training_model, prediction_model = self._create_models(
-            backbone_retinanet = backbone.retinanet,
+        model, self.training_model, prediction_model = self._create_models(
+            backbone_retinanet = self.backbone.retinanet,
             num_classes = train_generator.num_classes(),
             weights = weights,
             freeze_backbone = self.hyperparams['freeze_backbone'],
             lr = self.hyperparams['learning_rate']
         )
 
-        print(model.summary(), file = sys.__stdout__)
+        #print(model.summary(), file = sys.__stdout__)
+        model.summary()
 
-        if self.hyperparams[''] is False:
-            validation_generator = None
-
+        ### !!! vgg AND densenet BACKBONES CURRENTLY NOT IMPLEMENTED !!!
         ## Let the generator compute the backbone layer shapes using the actual backbone model
-        if 'vgg' in self.hyperparams['backbone'] or 'densenet' in self.hyperparams['backbone']:
-            train_generator.compute_shapes = make_shapes_callback(model)
-            if validation_generator:
-                validation_generator.compute_shapes = train_generator.compute_shapes
+        # if 'vgg' in self.hyperparams['backbone'] or 'densenet' in self.hyperparams['backbone']:
+        #     train_generator.compute_shapes = make_shapes_callback(model)
+        #     if validation_generator:
+        #         validation_generator.compute_shapes = train_generator.compute_shapes
         
         ## Set up callbacks
-        callbacks = create_callbacks()
+        callbacks = self._create_callbacks(
+            model,
+            self.training_model,
+            prediction_model,
+        )
 
         start_time = time.time()
         print('Starting training...', file = sys.__stdout__)
@@ -503,11 +434,10 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             callbacks = callbacks,
             workers = self.workers,
             use_multiprocessing = self.multiprocessing,
-            max_queue_size = self.max_queue_size,
-            validation_data = validation_generator
+            max_queue_size = self.max_queue_size
         )
         
-        print(f'Training complete. training took {time.time()-start_time} seconds', file = sys.__stdout__)
+        print(f'Training complete. Training took {time.time()-start_time} seconds', file = sys.__stdout__)
         return CallResult(None) 
 
 
@@ -536,22 +466,21 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         max_detections = 100    # Maxmimum number of detections to use per image
         
         # create the generator
-        generator = _create_generator(self.annotations, self.classes, shuffle_groups = False)
+        generator = self._create_generator(self.annotations, self.classes, shuffle_groups = False)
 
-        # load the model
-        print('Loading model...')
-        model = models.load_model(self.training_model, backbone_name = self.hyperparams['backbone'])
-
-        # Convert to inference model
-        inference_model = models.convert_model(model)
+        # Convert training model to inference model
+        inference_model = models.convert_model(self.training_model)
 
         # Assemble output lists
         ## Determine predicted bounding boxes (8-coordinate format, list)
-        boxes = evaluate_model(generator, model, iou_threshold, score_threshold, max_detections)
+        boxes = self._evaluate_model(generator, inference_model, iou_threshold, score_threshold, max_detections, self.hyperparams['output'])
+        y_pred = #
 
-        ## Convert ground truth bounding boxes to list (ground_truth_list)
+        print(boxes, file = sys.__stdout__)
+        print(y_pred, file = sys.__stdout__)
 
         ## Compile into one tuple
+        ground_truth_boxes, predicted_boxes = (y_true, y_pred)
 
         ## Return images if specified
         #if self.hyperparams('freeze_backbone') is not 'no_output':
