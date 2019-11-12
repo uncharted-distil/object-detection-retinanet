@@ -187,7 +187,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         self.image_paths = pd.Series(self.image_paths)
 
         ## Prepare y_true
-        self.y_true = #
+        #self.y_true = 
 
         ## Arrange proper bounding coordinates
         bounding_coords = inputs.bounding_box.str.split(',', expand = True)
@@ -327,6 +327,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         """
 
         all_detections = [[None for i in range(generator.num_classes()) if generator.has_label(i)] for j in range(generator.size())]
+        print(np.shape(all_detections), file = sys.__stdout__)
 
         for i in range(generator.size()):
             raw_image    = generator.load_image(i)
@@ -338,6 +339,9 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         # run network
         boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis = 0))[:3]
+        #print(boxes, file = sys.__stdout__)
+        #print(scores, file = sys.__stdout__)
+        #print(labels, file = sys.__stdout__)
 
         # correct boxes for image scale
         boxes /= scale
@@ -357,11 +361,16 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         image_labels     = labels[0, indices[scores_sort]]
         image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis = 1), np.expand_dims(image_labels, axis = 1)], axis = 1)
 
-        if save_path is True:
-            draw_annotations(raw_image, generator.load_annotations(i), label_to_name = generator.label_to_name)
-            draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name = generator.label_to_name, score_threshold = score_threshold)
+        #print(image_boxes, file = sys.__stdout__)
+        #print(image_scores, file = sys.__stdout__)
+        #print(image_labels, file = sys.__stdout__)
+        #print(image_detections, file = sys.__stdout__)
 
-            cv2.imwrite(os.path.join(save_path, '{}.png'.format(i)), raw_image)
+        # if save_path is True:
+        #     draw_annotations(raw_image, generator.load_annotations(i), label_to_name = generator.label_to_name)
+        #     draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name = generator.label_to_name, score_threshold = score_threshold)
+
+        #     cv2.imwrite(os.path.join(save_path, '{}.png'.format(i)), raw_image)
         
         # copy detections to all_detections
         for label in range(generator.num_classes()):
@@ -474,7 +483,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         # Assemble output lists
         ## Determine predicted bounding boxes (8-coordinate format, list)
         boxes = self._evaluate_model(generator, inference_model, iou_threshold, score_threshold, max_detections, self.hyperparams['output'])
-        y_pred = #
+        #y_pred = #
 
         print(boxes, file = sys.__stdout__)
         print(y_pred, file = sys.__stdout__)
@@ -483,53 +492,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         ground_truth_boxes, predicted_boxes = (y_true, y_pred)
 
         ## Return images if specified
-        #if self.hyperparams('freeze_backbone') is not 'no_output':
+        #if self.hyperparams('output') is not 'no_output':
             # Return images with boxes in specified path. See evaluate.py.
         
         return CallResult(results_df)
-
-# if __name__ == '__main__':
-#     # Load volumes
-#     volumes = {}
-#     volumes["imagenet_weights"] = '/root/ResNet-50-model.keras.h5'
-#     client = ObjectDetectionRNPrimitive(hyperparams = {}, volumes = volumes)
-
-#     # Load and process dataset
-#     input_dataset = container.Dataset.load("file:///datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/TRAIN/dataset_TRAIN/datasetDoc.json")
-#     #hyperparams_class = Denormalize.DenormalizePrimitive.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams']
-#     #denorm_client = Denormalize.DenormalizePrimitive(hyperparams = hyperparams_class.defaults())
-#     denorm_client = Denormalize.DenormalizePrimitive(hyperparams = {})
-
-#     ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = {"dataframe_resource":"learningData"})
-#     dataset_meta = d3m_DataFrame(denorm_client.produce(inputs = input_dataset).value)
-#     df = d3m_DataFrame(ds2df_client.produce(inputs = dataset_meta).value)
-    
-#     # Process training data
-#     client.set_training_data(inputs = df, outputs = None)
-    
-#     # Fit, produce, and output
-#     result = client.produce(inputs = df)
-#     print(result.value)   
-
-# if __name__ == '__main__'
-#     # Load data and preprocessing
-#     input_dataset = container.Dataset.load('file:///datasets/seed_datasets_current/66_chlorineConcentration/TRAIN/dataset_TRAIN/datasetDoc.json')
-#     hyperparams_class = LSTM_FCN.metadata.query()['primitive_code']['class_type_arguments']['Hyperparams'] 
-#     shallot_client = LSTM_FCN(hyperparams=hyperparams_class.defaults())
-#     shallot_client.set_training_data(inputs = input_dataset, outputs = None)
-#     shallot_client.fit()
-#     test_dataset = container.Dataset.load('file:///datasets/seed_datasets_current/66_chlorineConcentration/TEST/dataset_TEST/datasetDoc.json')
-#     results = shallot_client.produce(inputs = test_dataset)
-#     print(results.value)
-
-
-# if __name__ == '__main__':
-#     volumes = {} # d3m large primitive architecture dictionary of large files
-#     volumes["croc_weights"]='/home/croc_weights' # location of extracted required files archive
-#     client = croc(hyperparams={'target_columns': ['filename'],
-#                                'output_labels': ['filename']}, volumes=volumes)
-#     input_dataset = container.Dataset.load("file:///home/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/TRAIN/dataset_TRAIN/datasetDoc.json")
-#     ds2df_client = DatasetToDataFrame.DatasetToDataFramePrimitive(hyperparams = {"dataframe_resource":"0"})
-#     df = d3m_DataFrame(ds2df_client.produce(inputs = input_dataset).value) 
-#     result = client.produce(inputs=df)
-#     print(result.value)   
