@@ -20,8 +20,6 @@ from d3m import container, utils
 from d3m.container import DataFrame as d3m_DataFrame
 from d3m.metadata import base as metadata_base, hyperparams, params
 from d3m.primitive_interfaces.base import PrimitiveBase, CallResult
-from common_primitives import utils as utils_cp, dataset_to_dataframe as DatasetToDataFrame
-from common_primitives import denormalize as Denormalize
 
 from callbacks import RedirectModel
 from callbacks.eval import Evaluate
@@ -30,6 +28,7 @@ from models.retinanet import retinanet_bbox
 from preprocessing.csv_generator import CSVGenerator
 from utils.anchors import make_shapes_callback
 from utils.model import freeze as freeze_model
+from utils.gpu import setup_gpu
 
 Inputs = container.pandas.DataFrame
 Outputs = container.pandas.DataFrame
@@ -94,10 +93,6 @@ class Hyperparams(hyperparams.Hyperparams):
         description = "Output images and predicted bounding boxes after evaluation."
     )
 
-# score-threshold [?]
-# iou-threshold [?]
-# max-detections [?]
-
 class Params(params.Params):
     pass
 
@@ -138,12 +133,6 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             'key': "resnet50",
             'file_uri': "http://public.datadrivendiscovery.org/ResNet-50-model.keras.h5",
             'file_digest': "0128cdfa3963288110422e4c1a57afe76aa0d760eb706cda4353ef1432c31b9c" # TBD 
-            },
-            {
-            'type': "FILE",
-            'key': "model2",
-            'file_uri': "http://public.datadrivendiscovery.org/ResNet-50-model.keras.h5",
-            'file_digest': "20e0fa7483c40af0e4b5bf0d3e3f1847e2469065f7d4dbc99f451565cf9e8c90" # TBD 
             }
         ],
         #'algorithm_types': [metadata_base.PrimitiveAlgorithmType.RETINANET_CONVOLUTIONAL_NEURAL_NETWORK],
@@ -191,9 +180,6 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         self.base_dir = [inputs.metadata.query((metadata_base.ALL_ELEMENTS, t))['location_base_uris'][0].replace('file:///', '/') for t in image_cols]
         self.image_paths = np.array([[os.path.join(self.base_dir, filename) for filename in inputs.iloc[:,col]] for self.base_dir, col in zip(self.base_dir, image_cols)]).flatten()
         self.image_paths = pd.Series(self.image_paths)
-
-        ## Prepare y_true
-        #self.y_true = 
 
         ## Arrange proper bounding coordinates
         bounding_coords = inputs.bounding_box.str.split(',', expand = True)
@@ -329,14 +315,12 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         
         Returns
         -------
-        all_detections   : A list containing the predicted boxes for each image in the generator.
+        all_detections  : A list containing the predicted boxes for each image in the generator.
         """
 
-        #all_detections = [[None for i in range(generator.num_classes()) if generator.has_label(i)] for j in range(generator.size())]
-        #print(np.shape(all_detections), file = sys.__stdout__)
-        
         box_list = []
-        for i in range(0,3):
+        score_list = []
+        for i in range(generator.size()):
             raw_image    = generator.load_image(i)
             image        = generator.preprocess_image(raw_image.copy())
             image, scale = generator.resize_image(image)
@@ -356,101 +340,87 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
     
                 b = box.astype(int)
                 box_list.append(b)
+                score_list.append(score)
 
-            # select indices which have a score above the threshold
-            # indices = np.where(scores[0, :] > score_threshold)[0]
+            ### !!! SAVEPATH CURRENTLY NOT IMPLEMENTED !!!
+            ### This optional feature can be added later, maybe for TA3, allowing images to be output with 
+            ### bounding boxes to a specified directory after evaluation.
+            # if save_path is True:
+            #     draw_annotations(raw_image, generator.load_annotations(i), label_to_name = generator.label_to_name)
+            #     draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name = generator.label_to_name, score_threshold = score_threshold)
 
-            # # select those scores
-            # scores = scores[0][indices]
-
-            # # find the order with which to sort the scores
-            # scores_sort = np.argsort(-scores)[:max_detections]
-
-            # # select detections
-            # image_boxes      = boxes[0, indices[scores_sort], :]
-            # image_scores     = scores[scores_sort]
-            # image_labels     = labels[0, indices[scores_sort]]
-            # image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis = 1), np.expand_dims(image_labels, axis = 1)], axis = 1)
-
-            # # if save_path is True:
-            # #     draw_annotations(raw_image, generator.load_annotations(i), label_to_name = generator.label_to_name)
-            # #     draw_detections(raw_image, image_boxes, image_scores, image_labels, label_to_name = generator.label_to_name, score_threshold = score_threshold)
-
-            # #     cv2.imwrite(os.path.join(save_path, '{}.png'.format(i)), raw_image)
+            #     cv2.imwrite(os.path.join(save_path, '{}.png'.format(i)), raw_image)
             
-            # # copy detections to all_detections
-            # for label in range(generator.num_classes()):
-            #     if not generator.has_label(label):
-            #         continue
-
-            #     all_detections[i][label] = image_detections[image_detections[:, -1] == label, :-1]
-
-        return box_list
-
+        return box_list, score_list
+    
     def fit(self, *, timeout: float = None, iterations: int = None) -> CallResult[None]:
-        # """
-        # Creates the image generators and then trains RetinaNet model on the image paths in the input 
-        # dataframe column.
+        """
+        Creates the image generators and then trains RetinaNet model on the image paths in the input 
+        dataframe column.
 
-        # Can choose to use validation generator. 
+        Can choose to use validation generator. 
         
-        # If no weight file is provided, the default is to use the ImageNet weights.
-        # """
+        If no weight file is provided, the default is to use the ImageNet weights.
+        """
 
-        # # Create object that stores backbone information
+        # Create object that stores backbone information
         self.backbone = models.backbone(self.hyperparams['backbone'])
 
-        # # Create the generators
-        # train_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], self.backbone.preprocess_image)
+        # Set up specific GPU
+        # if self.hyperparams['gpu_id'] is not None:
+        #     setup_gpu(self.hyperparams['gpu_id'])
 
-        # # Running the model
-        # ## Assign weights
-        # if self.hyperparams['weights'] is False:
-        #     weights = None
-        # else:
-        #     weights = self.volumes[self.hyperparams['backbone']]
+        # Create the generators
+        train_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], self.backbone.preprocess_image)
 
-        # ## Create model
-        # print('Creating model...', file = sys.__stdout__)
+        # Running the model
+        ## Assign weights
+        if self.hyperparams['weights'] is False:
+            weights = None
+        else:
+            weights = self.volumes[self.hyperparams['backbone']]
 
-        # model, self.training_model, prediction_model = self._create_models(
-        #     backbone_retinanet = self.backbone.retinanet,
-        #     num_classes = train_generator.num_classes(),
-        #     weights = weights,
-        #     freeze_backbone = self.hyperparams['freeze_backbone'],
-        #     lr = self.hyperparams['learning_rate']
-        # )
+        ## Create model
+        print('Creating model...', file = sys.__stdout__)
 
-        # #print(model.summary(), file = sys.__stdout__)
-        # model.summary()
+        model, self.training_model, prediction_model = self._create_models(
+            backbone_retinanet = self.backbone.retinanet,
+            num_classes = train_generator.num_classes(),
+            weights = weights,
+            freeze_backbone = self.hyperparams['freeze_backbone'],
+            lr = self.hyperparams['learning_rate']
+        )
 
-        # ### !!! vgg AND densenet BACKBONES CURRENTLY NOT IMPLEMENTED !!!
-        # ## Let the generator compute the backbone layer shapes using the actual backbone model
-        # # if 'vgg' in self.hyperparams['backbone'] or 'densenet' in self.hyperparams['backbone']:
-        # #     train_generator.compute_shapes = make_shapes_callback(model)
-        # #     if validation_generator:
-        # #         validation_generator.compute_shapes = train_generator.compute_shapes
+        #print(model.summary(), file = sys.__stdout__)
+        model.summary()
+
+        ### !!! vgg AND densenet BACKBONES CURRENTLY NOT IMPLEMENTED !!!
+        ## Let the generator compute the backbone layer shapes using the actual backbone model
+        # if 'vgg' in self.hyperparams['backbone'] or 'densenet' in self.hyperparams['backbone']:
+        #     train_generator.compute_shapes = make_shapes_callback(model)
+        #     if validation_generator:
+        #         validation_generator.compute_shapes = train_generator.compute_shapes
         
-        # ## Set up callbacks
-        # callbacks = self._create_callbacks(
-        #     model,
-        #     self.training_model,
-        #     prediction_model,
-        # )
+        ## Set up callbacks
+        callbacks = self._create_callbacks(
+            model,
+            self.training_model,
+            prediction_model,
+        )
 
         start_time = time.time()
         print('Starting training...', file = sys.__stdout__)
 
-        # self.training_model.fit_generator(
-        #     generator = train_generator,
-        #     steps_per_epoch = self.hyperparams['n_steps'],
-        #     epochs = self.hyperparams['n_epochs'],
-        #     verbose = 1,
-        #     callbacks = callbacks,
-        #     workers = self.workers,
-        #     use_multiprocessing = self.multiprocessing,
-        #     max_queue_size = self.max_queue_size
-        # )
+        self.training_model.fit_generator(
+            generator = train_generator,
+            steps_per_epoch = self.hyperparams['n_steps'],
+            epochs = self.hyperparams['n_epochs'],
+            verbose = 1,
+            callbacks = callbacks,
+            workers = self.workers,
+            use_multiprocessing = self.multiprocessing,
+            max_queue_size = self.max_queue_size
+        )
         
         print(f'Training complete. Training took {time.time()-start_time} seconds.', file = sys.__stdout__)
         return CallResult(None) 
@@ -479,45 +449,67 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         iou_threshold = 0.5     # Bounding box overlap threshold for false positive or true positive
         score_threshold = 0.05  # The score confidence threshold to use for detections
         max_detections = 100    # Maxmimum number of detections to use per image
-
+        
         # create the generator
-        generator = self._create_generator(self.annotations.iloc[0:10], self.classes, shuffle_groups = False)
+        generator = self._create_generator(self.annotations, self.classes, shuffle_groups = False)
 
         # Convert training model to inference model
-        #inference_model = models.convert_model(self.training_model)
-        inference_model = models.load_model(self.volumes['model2'], backbone_name='resnet50')
+        inference_model = models.convert_model(self.training_model)
 
         # Assemble output lists
-        ## Determine predicted bounding boxes (8-coordinate format, list)
-        boxes = self._evaluate_model(generator, inference_model, iou_threshold, score_threshold, max_detections, self.hyperparams['output'])
+        ## Generate predicted bounding boxes (8-coordinate format, list)
+        boxes, scores = self._evaluate_model(generator, inference_model, iou_threshold, score_threshold, max_detections, self.hyperparams['output'])
+        
+        ## Convert predicted boxes from a list of arrays to a list of strings
         boxes = np.array(boxes).tolist()
+        boxes = list(map(lambda x : ",".join(map(str, x)), boxes))
+
+        ## Generate list of image names and d3m indices corresponding to predicted bounding boxes
         img_list = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
-        y_pred = [[y] + x for x, y in zip(boxes, img_list)]
+        d3m_idx = inputs.d3mIndex.tolist()
         
+        ## Assemble in a Pandas DataFrame
+        results = pd.DataFrame({
+            'd3mIndex': d3m_idx,
+            'image': img_list,
+            'bounding_box': boxes,
+            'confidence': scores
+        })
+
+        # Convert to DataFrame container
+        results_df = d3m_DataFrame(results)
         
-        #y_pred = #
+        ## Assemble first output column ('d3mIndex)
+        col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
+        col_dict['structural_type'] = type("1")
+        col_dict['name'] = 'd3mIndex'
+        col_dict['semantic_types'] = ('http://schema.org/Integer', 
+                                      'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
+        results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
 
-        print(y_pred, file = sys.__stdout__)
-        #print(y_pred, file = sys.__stdout__)
+        ## Assemble second output column ('image')
+        col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
+        col_dict['structural_type'] = type("1")
+        col_dict['name'] = 'image'
+        col_dict['semantic_types'] = ('http://schema.org/Text', 
+                                      'https://metadata.datadrivendiscovery.org/types/Attribute')
+        results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
 
-        # for label in range(generator.num_classes()):
-        #     if not generator.has_label(label):
-        #         continue
+        ## Assemble third output column ('bounding_box')
+        col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 2)))
+        col_dict['structural_type'] = type("1")
+        col_dict['name'] = 'bounding_box'
+        col_dict['semantic_types'] = ('http://schema.org/Text', 
+                                      'https://metadata.datadrivendiscovery.org/types/PredictedTarget', 
+                                      'https://metadata.datadrivendiscovery.org/types/BoundingPolygon')
+        results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 2), col_dict)
 
-        #     scores = np.zeros((0, ))
-        #     for i in range(generator.size()):
-        #         detections = all_detections[i][label]
-        #         for d in detections:
-        #             scores = np.append(scores, d[4])
-        
-        # print(detections, file = sys.__stdout__)
-        # print(scores, file = sys.__stdout__)
-
-        ## Compile into one tuple
-        #ground_truth_boxes, predicted_boxes = (y_true, y_pred)
-
-        ## Return images if specified
-        #if self.hyperparams('output') is not 'no_output':
-            # Return images with boxes in specified path. See evaluate.py.
+        ## Assemble fourth output column ('confidence')
+        col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 3)))
+        col_dict['structural_type'] = type("1")
+        col_dict['name'] = 'confidence'
+        col_dict['semantic_types'] = ('http://schema.org/Integer', 
+                                      'https://metadata.datadrivendiscovery.org/types/Score')
+        results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 3), col_dict) 
         
         return CallResult(results_df)
