@@ -210,3 +210,5 @@ weights = hyperparams.Hyperparameter[str]{
 
 
 print(self.annotations, file = sys.__stdout__)        
+
+entry_points = {'d3m.primitives': ['primitive_family.algorithm_type = primitive_python_file_name:primitive_class_name'],},

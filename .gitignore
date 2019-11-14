@@ -1,0 +1,4 @@
+### Ignore all h5 files
+ResNet-50-model.keras.h5
+model2.h5
+model3.h5
