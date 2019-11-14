@@ -432,19 +432,13 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         Parameters
         ----------
-            inputs: numpy ndarray of size (n_images, dimension) containing the d3m Index, image name, 
-            and bounding box for each image.
+            inputs  : numpy ndarray of size (n_images, dimension) containing the d3m Index, image name, 
+                      and bounding box for each image.
 
         Returns
         -------
-            outputs: 
-                list of size (n_detections, dimension) where the columns are the image name followed
-                by the detection coordinate for each image. The detection coordinates are in 8-coordinate
-                format.
-
-                list of size (n_images, dimensions) where the columns are the image name followed by the
-                ground truth coordinate for each image. The ground truth coordinates are in 8-coordinate
-                format.
+            outputs : A d3m dataframe container with the d3m index, image name, bounding boxes as 
+                      a string (8 coordinate format), and confidence scores.
         """
         iou_threshold = 0.5     # Bounding box overlap threshold for false positive or true positive
         score_threshold = 0.05  # The score confidence threshold to use for detections
