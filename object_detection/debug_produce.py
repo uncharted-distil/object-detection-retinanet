@@ -523,7 +523,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         #print(d3m_idx[0:3], file = sys.__stdout__)
         #print(img_list[0:3], file = sys.__stdout__)
-        #print(boxes[0:3], file = sys.__stdout__)
+        print(boxes, file = sys.__stdout__)
+        print(scores, file = sys.__stdout__)
         
         results = pd.DataFrame({
             'd3mIndex': d3m_idx[0:3],

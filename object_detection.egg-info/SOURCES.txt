@@ -1,7 +1,7 @@
 README.md
 setup.py
 object_detection/__init__.py
-object_detection/object_detection copy.py
+object_detection/debug_produce.py
 object_detection/object_detection.py
 object_detection/object_detection_pipeline.py
 object_detection/workspace.py
