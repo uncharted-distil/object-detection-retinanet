@@ -63,7 +63,7 @@ class Hyperparams(hyperparams.Hyperparams):
         description = "Size of the batches as input to the model."
     )
     n_epochs = hyperparams.Hyperparameter[int](
-        default = 1,
+        default = 20,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         description = "Number of epochs to train."
     )
@@ -83,7 +83,7 @@ class Hyperparams(hyperparams.Hyperparams):
         description = "Learning rate."
     )
     n_steps = hyperparams.Hyperparameter[int](
-        default = 1,
+        default = 50,
         semantic_types = ['https://metadata.datadrivendiscovery.org/types/TuningParameter'],
         description = "Number of steps/epoch."
     )
@@ -462,8 +462,10 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         img_list = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
         d3m_idx = inputs.d3mIndex.tolist()
         
-        print(boxes, file = sys.__stdout__)
-        print(scores, file = sys.__stdout__)
+        print(len(d3m_idx), file = sys.__stdout__)
+        print(len(img_list), file = sys.__stdout__)
+        print(len(boxes), file = sys.__stdout__)
+        print(len(scores), file = sys.__stdout__)
 
         ## Assemble in a Pandas DataFrame
         results = pd.DataFrame({
