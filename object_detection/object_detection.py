@@ -320,7 +320,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         box_list = []
         score_list = []
-        for i in range(generator.size())
+        for i in range(generator.size()):
             raw_image    = generator.load_image(i)
             image        = generator.preprocess_image(raw_image.copy())
             image, scale = generator.resize_image(image)
@@ -462,8 +462,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         img_list = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
         d3m_idx = inputs.d3mIndex.tolist()
         
-        #print(boxes, file = sys.__stdout__)
-        #print(scores, file = sys.__stdout__)
+        print(boxes, file = sys.__stdout__)
+        print(scores, file = sys.__stdout__)
 
         ## Assemble in a Pandas DataFrame
         results = pd.DataFrame({
