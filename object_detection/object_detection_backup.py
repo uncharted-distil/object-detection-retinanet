@@ -300,7 +300,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         return validation_generator
 
 
-    def _get_detections(self, generator, model, iou_threshold, score_threshold, max_detections, save_path):
+    def _evaluate_model(self, generator, model, iou_threshold, score_threshold, max_detections, save_path):
         """ 
         Evaluate a given dataset using a given model.
 
@@ -318,8 +318,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         all_detections  : A list containing the predicted boxes for each image in the generator.
         """
 
-        all_detections = [[None for i in range(generator.num_classes()) if generator.has_label(i)] for j in range(generator.size())]
-        
+        box_list = []
+        score_list = []
         for i in range(generator.size()):
             raw_image    = generator.load_image(i)
             image        = generator.preprocess_image(raw_image.copy())
@@ -329,25 +329,18 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                 image = image.transpose((2, 0, 1))
 
             # run network
-            boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis=0))[:3]
+            boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis = 0))[:3]
 
             # correct boxes for image scale
             boxes /= scale
-
-            # select indices which have a score above the threshold
-            indices = np.where(scores[0, :] > score_threshold)[0]
-
-            # select those scores
-            scores = scores[0][indices]
-
-            # find the order with which to sort the scores
-            scores_sort = np.argsort(-scores)[:max_detections]
-
-            # select detections
-            image_boxes      = boxes[0, indices[scores_sort], :]
-            image_scores     = scores[scores_sort]
-            image_labels     = labels[0, indices[scores_sort]]
-            image_detections = np.concatenate([image_boxes, np.expand_dims(image_scores, axis=1), np.expand_dims(image_labels, axis=1)], axis=1)
+            
+            for box, score in zip(boxes[0], scores[0]):
+                if score < 0.5:
+                    break
+    
+                b = box.astype(int)
+                box_list.append(b)
+                score_list.append(score)
 
             ### !!! SAVEPATH CURRENTLY NOT IMPLEMENTED !!!
             ### This optional feature can be added later, maybe for TA3, allowing images to be output with 
@@ -358,13 +351,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
             #     cv2.imwrite(os.path.join(save_path, '{}.png'.format(i)), raw_image)
             
-            for label in range(generator.num_classes()):
-                if not generator.has_label(label):
-                    continue
-
-                all_detections[i][label] = image_detections[image_detections[:, -1] == label, :-1]
-
-        return all_detections
+        return box_list, score_list
     
     def fit(self, *, timeout: float = None, iterations: int = None) -> CallResult[None]:
         """
@@ -438,31 +425,6 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         print(f'Training complete. Training took {time.time()-start_time} seconds.', file = sys.__stdout__)
         return CallResult(None) 
 
-    def _get_annotations(self, generator):
-        """ Get the ground truth annotations from the generator.
-
-        The result is a list of lists such that the size is:
-            all_detections[num_images][num_classes] = annotations[num_detections, 5]
-
-        # Arguments
-            generator : The generator used to retrieve ground truth annotations.
-        # Returns
-            A list of lists containing the annotations for each image in the generator.
-        """
-        all_annotations = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
-
-        for i in range(generator.size()):
-            # load the annotations
-            annotations = generator.load_annotations(i)
-
-            # copy detections to all_annotations
-            for label in range(generator.num_classes()):
-                if not generator.has_label(label):
-                    continue
-
-                all_annotations[i][label] = annotations['bboxes'][annotations['labels'] == label, :].copy()
-
-        return all_annotations
 
     def produce(self, *, inputs: Inputs, timeout: float = None, iterations: int = None) -> CallResult[Outputs]:
         """
@@ -490,55 +452,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         # Assemble output lists
         ## Generate predicted bounding boxes (8-coordinate format, list)
-        all_detections = self._get_detections(generator, inference_model, iou_threshold, score_threshold, max_detections, self.hyperparams['output'])
-        all_annotations = self._get_annotations(generator)
-
-        for label in range(generator.num_classes()):
-            if not generator.has_label(label):
-                continue
-
-            false_positives = np.zeros((0,))
-            true_positives  = np.zeros((0,))
-            scores          = np.zeros((0,))
-            num_annotations = 0.0
-
-            for i in range(generator.size()):
-                detections           = all_detections[i][label]
-                annotations          = all_annotations[i][label]
-                num_annotations     += annotations.shape[0]
-                detected_annotations = []
-
-                for d in detections:
-                    scores = np.append(scores, d[4])
-
-                    if annotations.shape[0] == 0:
-                        false_positives = np.append(false_positives, 1)
-                        true_positives  = np.append(true_positives, 0)
-                        continue
-
-                    overlaps            = compute_overlap(np.expand_dims(d, axis=0), annotations)
-                    assigned_annotation = np.argmax(overlaps, axis=1)
-                    max_overlap         = overlaps[0, assigned_annotation]
-
-                    if max_overlap >= iou_threshold and assigned_annotation not in detected_annotations:
-                        false_positives = np.append(false_positives, 0)
-                        true_positives  = np.append(true_positives, 1)
-                        detected_annotations.append(assigned_annotation)
-                    else:
-                        false_positives = np.append(false_positives, 1)
-                        true_positives  = np.append(true_positives, 0)
-
-        print(false_positives, file = sys.__stdout__)
-        print(true_positives, file = sys.__stdout__)
-        print(detected_annotations, file = sys.__stdout__)
-        print(num_annotations, file = sys.__stdout__)
-        print(assigned_annotation, file = sys.__stdout__)
-        print(detections, file = sys.__stdout__)
-        print(annotations, file = sys.__stdout__)
-        print(scores, file = sys.__stdout__)
-        print(overlaps, file = sys.__stdout__)
-        print(max_overlap, file = sys.__stdout__)
-
+        boxes, scores = self._evaluate_model(generator, inference_model, iou_threshold, score_threshold, max_detections, self.hyperparams['output'])
+        
         ## Convert predicted boxes from a list of arrays to a list of strings
         boxes = np.array(boxes).tolist()
         boxes = list(map(lambda x : ",".join(map(str, x)), boxes))
@@ -547,10 +462,10 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         img_list = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
         d3m_idx = inputs.d3mIndex.tolist()
         
-        #print(len(d3m_idx), file = sys.__stdout__)
-        #print(len(img_list), file = sys.__stdout__)
-        #print(len(boxes), file = sys.__stdout__)
-        #print(len(scores), file = sys.__stdout__)
+        print(len(d3m_idx), file = sys.__stdout__)
+        print(len(img_list), file = sys.__stdout__)
+        print(len(boxes), file = sys.__stdout__)
+        print(len(scores), file = sys.__stdout__)
 
         ## Assemble in a Pandas DataFrame
         results = pd.DataFrame({

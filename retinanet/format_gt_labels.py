@@ -3,8 +3,10 @@
 import pandas as pd
 
 # Global vars
-WD_PATH = '/home/snamjoshi/Documents/git_repos/object-detection/retinanet/'
-CSV_PATH = WD_PATH + 'learning_data.csv'
+#WD_PATH = '/home/snamjoshi/Documents/git_repos/object-detection/retinanet/'
+WD_PATH = '~/docker/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/TRAIN/dataset_TRAIN/tables/'
+#CSV_PATH = WD_PATH + 'learning_data.csv'
+CSV_PATH = WD_PATH + 'learningData.csv'
 IMAGES_DIR_PATH = '/home/snamjoshi/docker/datasets/seed_datasets_current/LL1_penn_fudan_pedestrian/LL1_penn_fudan_pedestrian_dataset/media/'
 
 # Prepare and export annotations data file
