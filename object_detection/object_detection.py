@@ -501,12 +501,16 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             true_positives  = np.zeros((0,))
             scores          = np.zeros((0,))
             num_annotations = 0.0
+            all_annotations_list = []
+            scores_list = []
 
             for i in range(generator.size()):
                 detections           = all_detections[i][label]
                 annotations          = all_annotations[i][label]
                 num_annotations     += annotations.shape[0]
                 detected_annotations = []
+
+                all_annotations_list.append(annotations)
 
                 for d in detections:
                     scores = np.append(scores, d[4])
@@ -528,6 +532,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                         false_positives = np.append(false_positives, 1)
                         true_positives  = np.append(true_positives, 0)
 
+        all_annotations_list = np.array(all_annotations_list).tolist()
+
         print(false_positives, file = sys.__stdout__)
         print(true_positives, file = sys.__stdout__)
         print(detected_annotations, file = sys.__stdout__)
@@ -538,6 +544,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         print(scores, file = sys.__stdout__)
         print(overlaps, file = sys.__stdout__)
         print(max_overlap, file = sys.__stdout__)
+        print(len(all_annotations_list), file = sys.__stdout__)
+        print(len(scores), file = sys.__stdout__)
 
         ## Convert predicted boxes from a list of arrays to a list of strings
         boxes = np.array(boxes).tolist()
