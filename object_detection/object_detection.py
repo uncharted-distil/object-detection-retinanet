@@ -490,82 +490,104 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         # Assemble output lists
         ## Generate predicted bounding boxes (8-coordinate format, list)
-        all_detections = self._get_detections(generator, inference_model, iou_threshold, score_threshold, max_detections, self.hyperparams['output'])
-        all_annotations = self._get_annotations(generator)
+        #all_detections = self._get_detections(generator, inference_model, iou_threshold, score_threshold, max_detections, self.hyperparams['output'])
+        #all_annotations = self._get_annotations(generator)
 
-        for label in range(generator.num_classes()):
-            if not generator.has_label(label):
-                continue
+        # for label in range(generator.num_classes()):
+        #     if not generator.has_label(label):
+        #         continue
 
-            false_positives = np.zeros((0,))
-            true_positives  = np.zeros((0,))
-            scores          = np.zeros((0,))
-            num_annotations = 0.0
-            all_annotations_list = []
-            scores_list = []
+        #     false_positives = np.zeros((0,))
+        #     true_positives  = np.zeros((0,))
+        #     scores          = np.zeros((0,))
+        #     num_annotations = 0.0
+        #     all_annotations_list = []
+        #     scores_list = []
 
-            for i in range(generator.size()):
-                detections           = all_detections[i][label]
-                annotations          = all_annotations[i][label]
-                num_annotations     += annotations.shape[0]
-                detected_annotations = []
+        #     for i in range(generator.size()):
+        #         detections           = all_detections[i][label]
+        #         annotations          = all_annotations[i][label]
+        #         num_annotations     += annotations.shape[0]
+        #         detected_annotations = []
 
-                all_annotations_list.append(annotations)
+        #         all_annotations_list.append(annotations)
 
-                for d in detections:
-                    scores = np.append(scores, d[4])
+        #         for d in detections:
+        #             scores = np.append(scores, d[4])
 
-                    if annotations.shape[0] == 0:
-                        false_positives = np.append(false_positives, 1)
-                        true_positives  = np.append(true_positives, 0)
-                        continue
+        #             if annotations.shape[0] == 0:
+        #                 false_positives = np.append(false_positives, 1)
+        #                 true_positives  = np.append(true_positives, 0)
+        #                 continue
 
-                    overlaps            = compute_overlap(np.expand_dims(d, axis=0), annotations)
-                    assigned_annotation = np.argmax(overlaps, axis=1)
-                    max_overlap         = overlaps[0, assigned_annotation]
+        #             overlaps            = compute_overlap(np.expand_dims(d, axis=0), annotations)
+        #             assigned_annotation = np.argmax(overlaps, axis=1)
+        #             max_overlap         = overlaps[0, assigned_annotation]
 
-                    if max_overlap >= iou_threshold and assigned_annotation not in detected_annotations:
-                        false_positives = np.append(false_positives, 0)
-                        true_positives  = np.append(true_positives, 1)
-                        detected_annotations.append(assigned_annotation)
-                    else:
-                        false_positives = np.append(false_positives, 1)
-                        true_positives  = np.append(true_positives, 0)
+        #             if max_overlap >= iou_threshold and assigned_annotation not in detected_annotations:
+        #                 false_positives = np.append(false_positives, 0)
+        #                 true_positives  = np.append(true_positives, 1)
+        #                 detected_annotations.append(assigned_annotation)
+        #             else:
+        #                 false_positives = np.append(false_positives, 1)
+        #                 true_positives  = np.append(true_positives, 0)
 
-        all_annotations_list = np.array(all_annotations_list).tolist()
+        # all_annotations_list = np.array(all_annotations_list).tolist()
 
-        print(false_positives, file = sys.__stdout__)
-        print(true_positives, file = sys.__stdout__)
-        print(detected_annotations, file = sys.__stdout__)
-        print(num_annotations, file = sys.__stdout__)
-        print(assigned_annotation, file = sys.__stdout__)
-        print(detections, file = sys.__stdout__)
-        print(annotations, file = sys.__stdout__)
-        print(scores, file = sys.__stdout__)
-        print(overlaps, file = sys.__stdout__)
-        print(max_overlap, file = sys.__stdout__)
-        print(len(all_annotations_list), file = sys.__stdout__)
-        print(len(scores), file = sys.__stdout__)
+        # print(false_positives, file = sys.__stdout__)
+        # print(true_positives, file = sys.__stdout__)
+        # print(detected_annotations, file = sys.__stdout__)
+        # print(num_annotations, file = sys.__stdout__)
+        # print(assigned_annotation, file = sys.__stdout__)
+        # print(detections, file = sys.__stdout__)
+        # print(annotations, file = sys.__stdout__)
+        # print(scores, file = sys.__stdout__)
+        # print(overlaps, file = sys.__stdout__)
+        # print(max_overlap, file = sys.__stdout__)
+        # print(len(all_annotations_list), file = sys.__stdout__)
+        # print(len(scores), file = sys.__stdout__)
+
+        for i in self.image_paths:
+            image = read_image_bgr(i)
+
+            # preprocess image for network
+            image = preprocess_image(image)
+            image, scale = resize_image(image)
+
+            boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis = 0))
+
+            # correct for image scale
+            boxes /= scale
+
+            box_list = []
+            score_list = []
+            for box, score in zip(boxes[0], scores[0]):
+                if score < 0.5:
+                    break
+    
+                b = box.astype(int)
+                box_list.append(b)
+                score_list.append(score)
 
         ## Convert predicted boxes from a list of arrays to a list of strings
-        boxes = np.array(boxes).tolist()
+        boxes = np.array(box_list).tolist()
         boxes = list(map(lambda x : ",".join(map(str, x)), boxes))
 
         ## Generate list of image names and d3m indices corresponding to predicted bounding boxes
         img_list = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
         d3m_idx = inputs.d3mIndex.tolist()
         
-        #print(len(d3m_idx), file = sys.__stdout__)
-        #print(len(img_list), file = sys.__stdout__)
-        #print(len(boxes), file = sys.__stdout__)
-        #print(len(scores), file = sys.__stdout__)
+        print(len(d3m_idx), file = sys.__stdout__)
+        print(len(img_list), file = sys.__stdout__)
+        print(len(boxes), file = sys.__stdout__)
+        print(len(scores), file = sys.__stdout__)
 
         ## Assemble in a Pandas DataFrame
         results = pd.DataFrame({
             'd3mIndex': d3m_idx,
             'image': img_list,
             'bounding_box': boxes,
-            'confidence': scores
+            'confidence': score_list
         })
 
         # Convert to DataFrame container
