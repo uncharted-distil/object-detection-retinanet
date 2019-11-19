@@ -401,7 +401,6 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             lr = self.hyperparams['learning_rate']
         )
 
-        #print(model.summary(), file = sys.__stdout__)
         model.summary()
 
         ### !!! vgg AND densenet BACKBONES CURRENTLY NOT IMPLEMENTED !!!
@@ -478,7 +477,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         iou_threshold = 0.5     # Bounding box overlap threshold for false positive or true positive
         score_threshold = 0.05  # The score confidence threshold to use for detections
         max_detections = 100    # Maxmimum number of detections to use per image
-        
+
         # create the generator
         generator = self._create_generator(self.annotations, self.classes, shuffle_groups = False)
 
@@ -544,10 +543,15 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         # print(len(all_annotations_list), file = sys.__stdout__)
         # print(len(scores), file = sys.__stdout__)
 
+        start_time = time.time()
+        print('Starting testing...', file = sys.__stdout__)
+
         box_list = []
         score_list = []
 
-        for i in self.image_paths:
+        image_list = [x for i, x in enumerate(self.image_paths) if self.image_paths.index(x) == i]
+
+        for i in image_list:
             image = read_image_bgr(i)
 
             # preprocess image for network
@@ -571,19 +575,21 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         boxes = np.array(box_list).tolist()
         boxes = list(map(lambda x : ",".join(map(str, x)), boxes))
 
+        print(f'Testing complete. Testing took {time.time()-start_time} seconds.', file = sys.__stdout__)
+
         ## Generate list of image names and d3m indices corresponding to predicted bounding boxes
-        img_list = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
+        img_name = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
         d3m_idx = inputs.d3mIndex.tolist()
         
         print(len(d3m_idx), file = sys.__stdout__)
-        print(len(img_list), file = sys.__stdout__)
+        print(len(img_name), file = sys.__stdout__)
         print(len(boxes), file = sys.__stdout__)
         print(len(scores), file = sys.__stdout__)
 
         ## Assemble in a Pandas DataFrame
         results = pd.DataFrame({
             'd3mIndex': d3m_idx,
-            'image': img_list,
+            'image': img_name,
             'bounding_box': boxes,
             'confidence': score_list
         })
