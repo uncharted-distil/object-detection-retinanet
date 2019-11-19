@@ -29,6 +29,7 @@ from preprocessing.csv_generator import CSVGenerator
 from utils.anchors import make_shapes_callback
 from utils.model import freeze as freeze_model
 from utils.gpu import setup_gpu
+from utils.image import read_image_bgr, preprocess_image, resize_image
 
 Inputs = container.pandas.DataFrame
 Outputs = container.pandas.DataFrame
@@ -379,10 +380,6 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         # Create object that stores backbone information
         self.backbone = models.backbone(self.hyperparams['backbone'])
 
-        # Set up specific GPU
-        # if self.hyperparams['gpu_id'] is not None:
-        #     setup_gpu(self.hyperparams['gpu_id'])
-
         # Create the generators
         train_generator = CSVGenerator(self.annotations, self.classes, self.base_dir, self.hyperparams['batch_size'], self.backbone.preprocess_image)
 
@@ -547,6 +544,9 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         # print(len(all_annotations_list), file = sys.__stdout__)
         # print(len(scores), file = sys.__stdout__)
 
+        box_list = []
+        score_list = []
+
         for i in self.image_paths:
             image = read_image_bgr(i)
 
@@ -554,13 +554,11 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             image = preprocess_image(image)
             image, scale = resize_image(image)
 
-            boxes, scores, labels = model.predict_on_batch(np.expand_dims(image, axis = 0))
+            boxes, scores, labels = inference_model.predict_on_batch(np.expand_dims(image, axis = 0))
 
             # correct for image scale
             boxes /= scale
 
-            box_list = []
-            score_list = []
             for box, score in zip(boxes[0], scores[0]):
                 if score < 0.5:
                     break
