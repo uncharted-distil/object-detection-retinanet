@@ -620,7 +620,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         ## Assemble in a Pandas DataFrame
         results = pd.DataFrame({
             'd3mIndex': d3mIdx,
-            'image': image_name_list,
+            #'image': image_name_list,
             'bounding_box': boxes,
             'confidence': score_list
         })
