@@ -548,8 +548,14 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         box_list = []
         score_list = []
+        image_name_list = []
 
-        image_list = [x for i, x in enumerate(self.image_paths) if self.image_paths.index(x) == i]
+        image_list = [x for i, x in enumerate(self.image_paths.tolist()) if self.image_paths.tolist().index(x) == i]
+        
+        print(len(self.image_paths.tolist()), file = sys.__stdout__)
+        print(len(self.annotations['img_file'].tolist()), file = sys.__stdout__)
+        print(len(image_list), file = sys.__stdout__)
+        print(image_list, file = sys.__stdout__)
 
         for i in image_list:
             image = read_image_bgr(i)
@@ -570,32 +576,49 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                 b = box.astype(int)
                 box_list.append(b)
                 score_list.append(score)
+                image_name_list.append(i * len(b))
 
         ## Convert predicted boxes from a list of arrays to a list of strings
+        print(f'Testing complete. Testing took {time.time()-start_time} seconds.', file = sys.__stdout__)
+        
         boxes = np.array(box_list).tolist()
         boxes = list(map(lambda x : ",".join(map(str, x)), boxes))
+        
+        image_name_list = [os.path.basename(list) for list in image_name_list]
 
-        print(f'Testing complete. Testing took {time.time()-start_time} seconds.', file = sys.__stdout__)
+        ## Create mapping between image names and D3M index
+        input_df = pd.DataFrame({
+            'd3mIndex': inputs.d3mIndex,
+            'image': inputs.image
+        })
+
+        d3mIdx_image_mapping = input_df.set_index('image').T.to_dict('list')
+
+        ## Extract values for image name keys
+        d3mIdx = [d3mIdx_image_mapping.get(key) for key in image_name_list]
+        d3mIdx = [item for sublist in d3mIdx for item in sublist]   # Flatten list of lists
 
         ## Generate list of image names and d3m indices corresponding to predicted bounding boxes
-        img_name = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
-        d3m_idx = inputs.d3mIndex.tolist()
+        #img_name = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
+        #d3m_idx = inputs.d3mIndex.tolist()
         
         print(len(d3m_idx), file = sys.__stdout__)
         print(len(img_name), file = sys.__stdout__)
         print(len(boxes), file = sys.__stdout__)
-        print(len(scores), file = sys.__stdout__)
+        print(len(score_list), file = sys.__stdout__)
 
         ## Assemble in a Pandas DataFrame
         results = pd.DataFrame({
-            'd3mIndex': d3m_idx,
-            'image': img_name,
+            'd3mIndex': d3mIdx,
+            'image': img_name_list,
             'bounding_box': boxes,
             'confidence': score_list
         })
 
         # Convert to DataFrame container
         results_df = d3m_DataFrame(results)
+
+        print(results_df, file = sys.__stdout__)
         
         ## Assemble first output column ('d3mIndex)
         col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 0)))
