@@ -546,6 +546,13 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         start_time = time.time()
         print('Starting testing...', file = sys.__stdout__)
 
+        # Generate image paths
+        image_cols = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/FileName')
+        self.base_dir = [inputs.metadata.query((metadata_base.ALL_ELEMENTS, t))['location_base_uris'][0].replace('file:///', '/') for t in image_cols]
+        self.image_paths = np.array([[os.path.join(self.base_dir, filename) for filename in inputs.iloc[:,col]] for self.base_dir, col in zip(self.base_dir, image_cols)]).flatten()
+        self.image_paths = pd.Series(self.image_paths)
+
+        # Initialize objects
         box_list = []
         score_list = []
         image_name_list = []
@@ -582,6 +589,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         print(f'Testing complete. Testing took {time.time()-start_time} seconds.', file = sys.__stdout__)
         
         boxes = np.array(box_list).tolist()
+        boxes = list(map(lambda x : [x[0], x[1], x[0], x[3], x[2], x[3], x[2], x[1]], boxes))
         boxes = list(map(lambda x : ",".join(map(str, x)), boxes))
         
         image_name_list = [os.path.basename(list) for list in image_name_list]
@@ -589,8 +597,10 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         ## Create mapping between image names and D3M index
         input_df = pd.DataFrame({
             'd3mIndex': inputs.d3mIndex,
-            'image': inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/FileName')
+            'image': [os.path.basename(list) for list in self.image_paths]
         })
+
+        print(input_df, file = sys.__stdout__)
 
         d3mIdx_image_mapping = input_df.set_index('image').T.to_dict('list')
 
@@ -602,15 +612,15 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         #img_name = [os.path.basename(list) for list in self.annotations['img_file'].tolist()]
         #d3m_idx = inputs.d3mIndex.tolist()
         
-        print(len(d3m_idx), file = sys.__stdout__)
-        print(len(img_name), file = sys.__stdout__)
+        print(len(d3mIdx), file = sys.__stdout__)
+        print(len(image_name_list), file = sys.__stdout__)
         print(len(boxes), file = sys.__stdout__)
         print(len(score_list), file = sys.__stdout__)
 
         ## Assemble in a Pandas DataFrame
         results = pd.DataFrame({
             'd3mIndex': d3mIdx,
-            'image': img_name_list,
+            'image': image_name_list,
             'bounding_box': boxes,
             'confidence': score_list
         })
