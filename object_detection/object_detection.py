@@ -639,28 +639,28 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
 
         ## Assemble second output column ('image')
-        col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
-        col_dict['structural_type'] = type("1")
-        col_dict['name'] = 'image'
-        col_dict['semantic_types'] = ('http://schema.org/Text', 
-                                      'https://metadata.datadrivendiscovery.org/types/Attribute')
-        results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
+        # col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
+        # col_dict['structural_type'] = type("1")
+        # col_dict['name'] = 'image'
+        # col_dict['semantic_types'] = ('http://schema.org/Text', 
+        #                               'https://metadata.datadrivendiscovery.org/types/Attribute')
+        # results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
 
         ## Assemble third output column ('bounding_box')
-        col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 2)))
+        col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
         col_dict['structural_type'] = type("1")
         col_dict['name'] = 'bounding_box'
         col_dict['semantic_types'] = ('http://schema.org/Text', 
                                       'https://metadata.datadrivendiscovery.org/types/PredictedTarget', 
                                       'https://metadata.datadrivendiscovery.org/types/BoundingPolygon')
-        results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 2), col_dict)
+        results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
 
         ## Assemble fourth output column ('confidence')
-        col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 3)))
+        col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 2)))
         col_dict['structural_type'] = type("1")
         col_dict['name'] = 'confidence'
         col_dict['semantic_types'] = ('http://schema.org/Integer', 
                                       'https://metadata.datadrivendiscovery.org/types/Score')
-        results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 3), col_dict) 
+        results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 2), col_dict) 
         
         return CallResult(results_df)
