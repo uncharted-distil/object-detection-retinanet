@@ -589,7 +589,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         ## Create mapping between image names and D3M index
         input_df = pd.DataFrame({
             'd3mIndex': inputs.d3mIndex,
-            'image': inputs.image
+            'image': inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/FileName')
         })
 
         d3mIdx_image_mapping = input_df.set_index('image').T.to_dict('list')
