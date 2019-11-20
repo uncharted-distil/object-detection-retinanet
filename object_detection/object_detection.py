@@ -577,7 +577,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             boxes /= scale
 
             for box, score in zip(boxes[0], scores[0]):
-                if score < 0.5:
+                if score < 0.25:
                     break
     
                 b = box.astype(int)
@@ -589,7 +589,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         print(f'Testing complete. Testing took {time.time()-start_time} seconds.', file = sys.__stdout__)
         
         boxes = np.array(box_list).tolist()
-        boxes = list(map(lambda x : [x[0], x[1], x[0], x[3], x[2], x[3], x[2], x[1]], boxes))
+        boxes = list(map(lambda x : [x[0], x[1], x[0], x[3], x[2], x[3], x[2], x[1]], boxes))  # Convert to 8 coordinate format for D3Mmm                
         boxes = list(map(lambda x : ",".join(map(str, x)), boxes))
         
         image_name_list = [os.path.basename(list) for list in image_name_list]
