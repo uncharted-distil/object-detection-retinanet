@@ -12,7 +12,7 @@ setup(
     url               = 'https://github.com/NewKnowledge/object-detection-retinanet/',
     author            = 'Sanjeev Namjoshi',
     author_email      = 'sanjeev@yonder.co',
-    packages          = ['object_detection-retinanet'],
+    packages          = ['object-detection-retinanet'],
     install_requires  = ['keras',
                          'keras-resnet==0.1.0',
                          'six',
