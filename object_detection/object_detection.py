@@ -459,6 +459,26 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                 all_annotations[i][label] = annotations['bboxes'][annotations['labels'] == label, :].copy()
 
         return all_annotations
+    
+    def _fill_empty_predictions(self, empty_predictions_image_names):
+        # Prepare D3M index
+        empty_predictions_d3mIdx = [d3mIdx_image_mapping.get(key) for key in empty_predictions_image_names]
+        empty_predictions_d3mIdx = [item for sublist in empty_predictions_d3mIdx for item in sublist]
+
+        # Prepare dummy columns
+        d3mIdx = empty_predictions_d3mIdx
+        image = empty_predictions_image_names
+        bounding_box = ["0,0,0,0,0,0,0,0"] * len(empty_predictions_d3mIdx)
+        confidence = [float(0)] * len(empty_predictions_d3mIdx)
+
+        empty_predictions_df = pd.DataFrame({
+            'd3mIndex': d3mIdx,
+            'image': empty_predictions_image_names,
+            'bounding_box': bounding_box,
+            'confidence': confidence
+        })
+
+    return empty_predictions_df
 
     def produce(self, *, inputs: Inputs, timeout: float = None, iterations: int = None) -> CallResult[Outputs]:
         """
@@ -577,7 +597,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
             boxes /= scale
 
             for box, score in zip(boxes[0], scores[0]):
-                if score < 0.25:
+                if score < 0.5:
                     break
     
                 b = box.astype(int)
@@ -604,8 +624,9 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         d3mIdx_image_mapping = input_df.set_index('image').T.to_dict('list')
 
-        ## Extract values for image name keys
+        ## Extract values for image name keys and get missing image predictions (if they exist)
         d3mIdx = [d3mIdx_image_mapping.get(key) for key in image_name_list]
+        empty_predictions_image_names = [k for k,v in d3mIdx_image_mapping.items() if v not in d3mIdx]
         d3mIdx = [item for sublist in d3mIdx for item in sublist]   # Flatten list of lists
 
         ## Generate list of image names and d3m indices corresponding to predicted bounding boxes
@@ -620,10 +641,18 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         ## Assemble in a Pandas DataFrame
         results = pd.DataFrame({
             'd3mIndex': d3mIdx,
-            #'image': image_name_list,
             'bounding_box': boxes,
             'confidence': score_list
         })
+
+        # D3M metrics evaluator needs at least one prediction per image. If RetinaNet does not return 
+        # predictions for an image, create a dummy empty prediction row to add to results_df for that
+        # missing image.
+        if len(empty_predictions_image_names) != 0:
+            # Create data frame of empty predictions for missing each image and concat with results.
+            # Sort results_df.
+            empty_predictions_df = _fill_empty_predictions(empty_predictions_image_names)
+            results_df = pd.concat([results, empty_predictions_df]).sort_values('d3mIndex')
 
         # Convert to DataFrame container
         results_df = d3m_DataFrame(results)
@@ -638,15 +667,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                                       'https://metadata.datadrivendiscovery.org/types/PrimaryKey')
         results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 0), col_dict)
 
-        ## Assemble second output column ('image')
-        # col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
-        # col_dict['structural_type'] = type("1")
-        # col_dict['name'] = 'image'
-        # col_dict['semantic_types'] = ('http://schema.org/Text', 
-        #                               'https://metadata.datadrivendiscovery.org/types/Attribute')
-        # results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
-
-        ## Assemble third output column ('bounding_box')
+        ## Assemble second output column ('bounding_box')
         col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 1)))
         col_dict['structural_type'] = type("1")
         col_dict['name'] = 'bounding_box'
@@ -655,7 +676,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
                                       'https://metadata.datadrivendiscovery.org/types/BoundingPolygon')
         results_df.metadata = results_df.metadata.update((metadata_base.ALL_ELEMENTS, 1), col_dict)
 
-        ## Assemble fourth output column ('confidence')
+        ## Assemble third output column ('confidence')
         col_dict = dict(results_df.metadata.query((metadata_base.ALL_ELEMENTS, 2)))
         col_dict['structural_type'] = type("1")
         col_dict['name'] = 'confidence'
