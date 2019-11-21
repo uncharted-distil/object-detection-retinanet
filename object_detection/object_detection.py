@@ -411,14 +411,8 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         score_threshold = 0.05  # The score confidence threshold to use for detections
         max_detections = 100    # Maxmimum number of detections to use per image
 
-        # create the generator
-        generator = self._create_generator(self.annotations, self.classes, shuffle_groups = False)
-
         # Convert training model to inference model
         inference_model = models.convert_model(self.training_model)
-
-        start_time = time.time()
-        print('Starting testing...', file = sys.__stdout__)
 
         # Generate image paths
         image_cols = inputs.metadata.get_columns_with_semantic_type('https://metadata.datadrivendiscovery.org/types/FileName')
@@ -431,8 +425,11 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         score_list = []
         image_name_list = []
 
-        # Predict bounding boxes and confidence socres for each image
+        # Predict bounding boxes and confidence scores for each image
         image_list = [x for i, x in enumerate(self.image_paths.tolist()) if self.image_paths.tolist().index(x) == i]
+
+        start_time = time.time()
+        print('Starting testing...', file = sys.__stdout__)
 
         for i in image_list:
             image = read_image_bgr(i)
@@ -459,7 +456,7 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
         
         ## Convert predicted boxes from a list of arrays to a list of strings
         boxes = np.array(box_list).tolist()
-        boxes = list(map(lambda x : [x[0], x[1], x[0], x[3], x[2], x[3], x[2], x[1]], boxes))  # Convert to 8 coordinate format for D3Mmm                
+        boxes = list(map(lambda x : [x[0], x[1], x[0], x[3], x[2], x[3], x[2], x[1]], boxes))  # Convert to 8 coordinate format for D3M            
         boxes = list(map(lambda x : ",".join(map(str, x)), boxes))
 
         # Create mapping between image names and D3M index
