@@ -467,18 +467,18 @@ class ObjectDetectionRNPrimitive(PrimitiveBase[Inputs, Outputs, Params, Hyperpar
 
         # Prepare dummy columns
         d3mIdx = empty_predictions_d3mIdx
-        image = empty_predictions_image_names
+        #image = empty_predictions_image_names
         bounding_box = ["0,0,0,0,0,0,0,0"] * len(empty_predictions_d3mIdx)
         confidence = [float(0)] * len(empty_predictions_d3mIdx)
 
         empty_predictions_df = pd.DataFrame({
             'd3mIndex': d3mIdx,
-            'image': empty_predictions_image_names,
+            #'image': empty_predictions_image_names,
             'bounding_box': bounding_box,
             'confidence': confidence
         })
 
-    return empty_predictions_df
+        return empty_predictions_df
 
     def produce(self, *, inputs: Inputs, timeout: float = None, iterations: int = None) -> CallResult[Outputs]:
         """
