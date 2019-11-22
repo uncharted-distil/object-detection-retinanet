@@ -6,13 +6,13 @@ from setuptools.extension import Extension
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
 setup(
-    name              = 'object_detection_retinanet',
+    name              = 'object-detection-retinanet',
     version           = '0.1.0',
     description       = 'Keras implementation of RetinaNet',
     url               = 'https://github.com/NewKnowledge/object-detection-retinanet/',
     author            = 'Sanjeev Namjoshi',
     author_email      = 'sanjeev@yonder.co',
-    packages          = ['object_detection_retinanet'],
+    packages          = ['object-detection-retinanet'],
     install_requires  = ['keras',
                          'keras-resnet==0.1.0',
                          'six',
