@@ -15,6 +15,7 @@ setup(
     packages          = ['object_detection_retinanet', 
                          'object_detection_retinanet.utils',
                          'object_detection_retinanet.layers'],
+    include_package_data = True, 
     install_requires  = ['keras',
                          'keras-resnet==0.1.0',
                          'six',
