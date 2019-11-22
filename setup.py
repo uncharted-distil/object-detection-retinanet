@@ -1,7 +1,7 @@
 import setuptools
 import numpy
 
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.extension import Extension
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
@@ -12,8 +12,9 @@ setup(
     url               = 'https://github.com/NewKnowledge/object-detection-retinanet/',
     author            = 'Sanjeev Namjoshi',
     author_email      = 'sanjeev@yonder.co',
-    #packages          = ['object_detection_retinanet'],
-    packages          = find_packages(),
+    packages          = ['object_detection_retinanet', 
+                         'object_detection_retinanet.utils',
+                         'object_detection_retinanet.layers'],
     install_requires  = ['keras',
                          'keras-resnet==0.1.0',
                          'six',
