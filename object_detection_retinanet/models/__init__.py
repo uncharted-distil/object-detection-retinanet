@@ -11,9 +11,9 @@ class Backbone(object):
         #from .. import losses
         #from .. import initializers
 
-        import layers
-        import losses
-        import initializers
+        import object_detection_retinanet.layers
+        import object_detection_retinanet.losses
+        import object_detection_retinanet.initializers
 
         self.custom_objects = {
             'UpsampleLike'     : layers.UpsampleLike,
