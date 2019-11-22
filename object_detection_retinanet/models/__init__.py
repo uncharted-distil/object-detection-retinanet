@@ -16,14 +16,14 @@ class Backbone(object):
         import object_detection_retinanet.initializers
 
         self.custom_objects = {
-            'UpsampleLike'     : layers.UpsampleLike,
-            'PriorProbability' : initializers.PriorProbability,
-            'RegressBoxes'     : layers.RegressBoxes,
-            'FilterDetections' : layers.FilterDetections,
-            'Anchors'          : layers.Anchors,
-            'ClipBoxes'        : layers.ClipBoxes,
-            '_smooth_l1'       : losses.smooth_l1(),
-            '_focal'           : losses.focal(),
+            'UpsampleLike'     : object_detection_retinanet.layers.UpsampleLike,
+            'PriorProbability' : object_detection_retinanet.initializers.PriorProbability,
+            'RegressBoxes'     : object_detection_retinanet.layers.RegressBoxes,
+            'FilterDetections' : object_detection_retinanet.layers.FilterDetections,
+            'Anchors'          : object_detection_retinanet.layers.Anchors,
+            'ClipBoxes'        : object_detection_retinanet.layers.ClipBoxes,
+            '_smooth_l1'       : object_detection_retinanet.losses.smooth_l1(),
+            '_focal'           : object_detection_retinanet.losses.focal(),
         }
 
         self.backbone = backbone
