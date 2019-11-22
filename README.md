@@ -6,7 +6,7 @@ The base library can be found here: https://github.com/fizyr/keras-retinanet. Se
 
 You must have `numpy` version 1.15.4 or greater to pip install this package.
 
-Using `pip3` version 19 or greater: `pip3 install -e git+https://github.com/NewKnowledge/object-detection_retinanet#egg=object-detection_retinanet`. 
+Using `pip3` version 19 or greater: `pip3 install -e git+https://github.com/NewKnowledge/object-detection-retinanet#egg=object_detection_retinanet`. 
 
 ## Changes from Fizyr Keras RetinaNet implemetation
 
