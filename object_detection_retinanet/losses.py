@@ -16,7 +16,7 @@ limitations under the License.
 
 import keras
 #from . import backend
-import backend
+import object_detection_retinanet.backend
 
 
 def focal(alpha=0.25, gamma=2.0):

@@ -20,7 +20,7 @@ import keras
 #from ..utils.compute_overlap import compute_overlap
 import pyximport
 pyximport.install()
-from utils.compute_overlap import compute_overlap
+from object_detection_retinanet.utils.compute_overlap import compute_overlap
 
 
 class AnchorParameters:

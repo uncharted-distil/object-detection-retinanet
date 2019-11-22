@@ -35,20 +35,20 @@ import keras
 # )
 # from ..utils.transform import transform_aabb
 
-from utils.anchors import (
+from object_detection_retinanet.utils.anchors import (
     anchor_targets_bbox,
     anchors_for_shape,
     guess_shapes
 )
-from utils.config import parse_anchor_parameters
-from utils.image import (
+from object_detection_retinanet.utils.config import parse_anchor_parameters
+from object_detection_retinanet.utils.image import (
     TransformParameters,
     adjust_transform_for_image,
     apply_transform,
     preprocess_image,
     resize_image,
 )
-from utils.transform import transform_aabb
+from object_detection_retinanet.utils.transform import transform_aabb
 
 
 class Generator(keras.utils.Sequence):

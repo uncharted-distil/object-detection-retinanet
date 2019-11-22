@@ -19,10 +19,10 @@ import keras
 #from .. import layers
 #from ..utils.anchors import AnchorParameters
 #from . import assert_training_model
-import initializers
-import layers
-from utils.anchors import AnchorParameters
-from models import assert_training_model
+import object_detection_retinanet.initializers
+import object_detection_retinanet.layers
+from object_detection_retinanet.utils.anchors import AnchorParameters
+from object_detection_retinanet.models import assert_training_model
 
 
 

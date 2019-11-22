@@ -17,8 +17,8 @@ limitations under the License.
 import keras
 #from .. import backend
 #from ..utils import anchors as utils_anchors
-import backend
-from utils import anchors as utils_anchors
+import object_detection_retinanet.backend
+from object_detection_retinanet.utils import anchors as utils_anchors
 
 import numpy as np
 
