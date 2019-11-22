@@ -24,7 +24,7 @@ setup(
                          'numpy>=1.14.0'
                         ],
     ext_modules       = [
-        Extension('utils.compute_overlap', ['utils/compute_overlap.pyx'],
+        Extension('object_detection_retinanet.utils.compute_overlap', ['object_detection_retinanet/utils/compute_overlap.pyx'],
         include_dirs = [numpy.get_include()])
     ]
 )
