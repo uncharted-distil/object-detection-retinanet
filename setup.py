@@ -6,7 +6,7 @@ from setuptools.extension import Extension
 from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
 setup(
-    name              = 'object_detection_retinanet',
+    name              = 'object-detection-retinanet',
     version           = '0.1.0',
     description       = 'Keras implementation of RetinaNet',
     url               = 'https://github.com/NewKnowledge/object-detection-retinanet/',
