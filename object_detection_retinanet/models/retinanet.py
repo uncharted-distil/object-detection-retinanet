@@ -70,7 +70,7 @@ def default_classification_model(
     outputs = keras.layers.Conv2D(
         filters=num_classes * num_anchors,
         kernel_initializer=keras.initializers.normal(mean=0.0, stddev=0.01, seed=None),
-        bias_initializer=initializers.PriorProbability(probability=prior_probability),
+        bias_initializer=object_detection_retinanet.initializers.PriorProbability(probability=prior_probability),
         name='pyramid_classification',
         **options
     )(outputs)
@@ -149,7 +149,7 @@ def __create_pyramid_features(C3, C4, C5, feature_size=256):
     # add P5 elementwise to C4
     P4           = keras.layers.Conv2D(feature_size, kernel_size=1, strides=1, padding='same', name='C4_reduced')(C4)
     P4           = keras.layers.Add(name='P4_merged')([P5_upsampled, P4])
-    P4_upsampled = layers.UpsampleLike(name='P4_upsampled')([P4, C3])
+    P4_upsampled = object_detection_retinanet.layers.UpsampleLike(name='P4_upsampled')([P4, C3])
     P4           = keras.layers.Conv2D(feature_size, kernel_size=3, strides=1, padding='same', name='P4')(P4)
 
     # add P4 elementwise to C3
@@ -228,7 +228,7 @@ def __build_anchors(anchor_parameters, features):
         ```
     """
     anchors = [
-        layers.Anchors(
+        object_detection_retinanet.layers.Anchors(
             size=anchor_parameters.sizes[i],
             stride=anchor_parameters.strides[i],
             ratios=anchor_parameters.ratios,
@@ -343,11 +343,11 @@ def retinanet_bbox(
     other = model.outputs[2:]
 
     # apply predicted regression to anchors
-    boxes = layers.RegressBoxes(name='boxes')([anchors, regression])
-    boxes = layers.ClipBoxes(name='clipped_boxes')([model.inputs[0], boxes])
+    boxes = object_detection_retinanet.layers.RegressBoxes(name='boxes')([anchors, regression])
+    boxes = object_detection_retinanet.layers.ClipBoxes(name='clipped_boxes')([model.inputs[0], boxes])
 
     # filter detections (apply NMS / score threshold / select top-k)
-    detections = layers.FilterDetections(
+    detections = object_detection_retinanet.layers.FilterDetections(
         nms                   = nms,
         class_specific_filter = class_specific_filter,
         name                  = 'filtered_detections'
