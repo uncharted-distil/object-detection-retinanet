@@ -103,12 +103,12 @@ class UpsampleLike(keras.layers.Layer):
         source, target = inputs
         target_shape = keras.backend.shape(target)
         if keras.backend.image_data_format() == 'channels_first':
-            source = backend.transpose(source, (0, 2, 3, 1))
-            output = backend.resize(source, (target_shape[2], target_shape[3]), method='nearest')
-            output = backend.transpose(output, (0, 3, 1, 2))
+            source = object_detection_retinanet.backend.transpose(source, (0, 2, 3, 1))
+            output = object_detection_retinanet.backend.resize(source, (target_shape[2], target_shape[3]), method='nearest')
+            output = object_detection_retinanet.backend.transpose(output, (0, 3, 1, 2))
             return output
         else:
-            return backend.resize(source, (target_shape[1], target_shape[2]), method='nearest')
+            return object_detection_retinanet.backend.resize(source, (target_shape[1], target_shape[2]), method='nearest')
 
     def compute_output_shape(self, input_shape):
         if keras.backend.image_data_format() == 'channels_first':
@@ -149,7 +149,7 @@ class RegressBoxes(keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         anchors, regression = inputs
-        return backend.bbox_transform_inv(anchors, regression, mean=self.mean, std=self.std)
+        return object_detection_retinanet.backend.bbox_transform_inv(anchors, regression, mean=self.mean, std=self.std)
 
     def compute_output_shape(self, input_shape):
         return input_shape[0]
@@ -171,15 +171,15 @@ class ClipBoxes(keras.layers.Layer):
         image, boxes = inputs
         shape = keras.backend.cast(keras.backend.shape(image), keras.backend.floatx())
         if keras.backend.image_data_format() == 'channels_first':
-            _, _, height, width = backend.unstack(shape, axis=0)
+            _, _, height, width = object_detection_retinanet.backend.unstack(shape, axis=0)
         else:
-            _, height, width, _ = backend.unstack(shape, axis=0)
+            _, height, width, _ = object_detection_retinanet.backend.unstack(shape, axis=0)
 
-        x1, y1, x2, y2 = backend.unstack(boxes, axis=-1)
-        x1 = backend.clip_by_value(x1, 0, width)
-        y1 = backend.clip_by_value(y1, 0, height)
-        x2 = backend.clip_by_value(x2, 0, width)
-        y2 = backend.clip_by_value(y2, 0, height)
+        x1, y1, x2, y2 = object_detection_retinanet.backend.unstack(boxes, axis=-1)
+        x1 = object_detection_retinanet.backend.clip_by_value(x1, 0, width)
+        y1 = object_detection_retinanet.backend.clip_by_value(y1, 0, height)
+        x2 = object_detection_retinanet.backend.clip_by_value(x2, 0, width)
+        y2 = object_detection_retinanet.backend.clip_by_value(y2, 0, height)
 
         return keras.backend.stack([x1, y1, x2, y2], axis=2)
 
