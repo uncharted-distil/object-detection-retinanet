@@ -65,9 +65,9 @@ class Anchors(keras.layers.Layer):
 
         # generate proposals from bbox deltas and shifted anchors
         if keras.backend.image_data_format() == 'channels_first':
-            anchors = backend.shift(features_shape[2:4], self.stride, self.anchors)
+            anchors = object_detection_retinanet.backend.shift(features_shape[2:4], self.stride, self.anchors)
         else:
-            anchors = backend.shift(features_shape[1:3], self.stride, self.anchors)
+            anchors = object_detection_retinanet.backend.shift(features_shape[1:3], self.stride, self.anchors)
         anchors = keras.backend.tile(keras.backend.expand_dims(anchors, axis=0), (features_shape[0], 1, 1))
 
         return anchors
