@@ -87,7 +87,7 @@ def filter_detections(
     # select top k
     scores              = object_detection_retinanet.backend.gather_nd(classification, indices)
     labels              = indices[:, 1]
-    scores, top_indices = backend.top_k(scores, k=keras.backend.minimum(max_detections, keras.backend.shape(scores)[0]))
+    scores, top_indices = object_detection_retinanet.backend.top_k(scores, k=keras.backend.minimum(max_detections, keras.backend.shape(scores)[0]))
 
     # filter input using the final set of indices
     indices             = keras.backend.gather(indices[:, 0], top_indices)
