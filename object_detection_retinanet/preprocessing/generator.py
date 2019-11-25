@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import tensorflow as tf
 
 import numpy as np
 import random
@@ -358,10 +357,10 @@ class Generator(keras.utils.Sequence):
         image_group, annotations_group = self.preprocess_group(image_group, annotations_group)
 
         # compute network inputs
-        inputs = tf.convert_to_tensor(self.compute_inputs(image_group), dtype = tf.float32)
+        inputs = self.compute_inputs(image_group)
 
         # compute network targets
-        targets = tf.convert_to_tensor(self.compute_targets(image_group, annotations_group), dtype = tf.float32)
+        targets = self.compute_targets(image_group, annotations_group)
 
         return inputs, targets
 
