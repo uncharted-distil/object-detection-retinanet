@@ -84,7 +84,7 @@ def load_model(filepath, backbone_name='resnet50'):
         ImportError: if h5py is not available.
         ValueError: In case of an invalid savefile.
     """
-    import keras.models
+    from tensorflow import keras.models
     return keras.models.load_model(filepath, custom_objects=backbone(backbone_name).custom_objects)
 
 

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import keras
+from tensorflow import keras
 #from . import backend
 import object_detection_retinanet.backend
 

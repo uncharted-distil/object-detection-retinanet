@@ -1,4 +1,4 @@
-import keras.callbacks
+from tensorflow import keras.callbacks
 
 
 class RedirectModel(keras.callbacks.Callback):
