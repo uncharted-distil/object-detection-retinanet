@@ -19,7 +19,7 @@ from tensorflow.keras import backend as K
 from ..utils.coco_eval import evaluate_coco
 
 
-class CocoEval(keras.callbacks.Callback):
+class CocoEval(callbacks.Callback):
     """ Performs COCO evaluation on each epoch.
     """
     def __init__(self, generator, tensorboard=None, threshold=0.05):

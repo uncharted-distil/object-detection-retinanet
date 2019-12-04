@@ -94,7 +94,7 @@ def densenet_retinanet(num_classes, backbone='densenet121', inputs=None, modifie
     layer_outputs = [model.get_layer(name='conv{}_block{}_concat'.format(idx + 2, block_num)).output for idx, block_num in enumerate(blocks)]
 
     # create the densenet backbone
-    model = keras.models.Model(inputs=inputs, outputs=layer_outputs[1:], name=model.name)
+    model = models.Model(inputs=inputs, outputs=layer_outputs[1:], name=model.name)
 
     # invoke modifier if given
     if modifier:
