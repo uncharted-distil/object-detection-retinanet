@@ -18,6 +18,7 @@ from .anchors import compute_overlap
 from .visualization import draw_detections, draw_annotations
 
 import tensorflow.keras as keras
+from tensorflow.keras import backend as K
 import numpy as np
 import os
 

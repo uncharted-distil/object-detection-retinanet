@@ -16,6 +16,7 @@ limitations under the License.
 
 import numpy as np
 import tensorflow.keras as keras
+from tensorflow.keras import backend as K
 
 #from ..utils.compute_overlap import compute_overlap
 import pyximport

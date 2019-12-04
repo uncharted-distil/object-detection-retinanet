@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import tensorflow.keras as keras
+from tensorflow.keras import backend as K
 #from .. import backend
 import object_detection_retinanet.backend
 

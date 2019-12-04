@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import tensorflow.keras as keras
+from tensorflow.keras import backend as K
 from tensorflow.keras.utils import get_file
 import keras_resnet
 import keras_resnet.models

@@ -17,6 +17,7 @@ limitations under the License.
 from __future__ import print_function
 
 import tensorflow.keras as keras
+from tensorflow.keras import backend as K
 import sys
 
 minimum_keras_version = 2, 3, 0

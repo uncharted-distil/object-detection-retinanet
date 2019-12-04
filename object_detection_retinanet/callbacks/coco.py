@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import tensorflow.keras as keras
+from tensorflow.keras import backend as K
 from ..utils.coco_eval import evaluate_coco
 
 
