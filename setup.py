@@ -19,7 +19,7 @@ setup(
                          'keras-resnet==0.1.0',
                          'six',
                          'scipy>=1.2.1,<=1.3.1',
-                         'cython=0.29.14',
+                         'cython==0.29.14',
                          'Pillow',
                          'progressbar2',
                          'opencv-python',
