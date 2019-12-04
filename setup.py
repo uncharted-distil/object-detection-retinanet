@@ -23,7 +23,7 @@ setup(
                          'Pillow',
                          'progressbar2',
                          'opencv-python',
-                         'numpy>=1.15.4,<=1.17.3'
+                         'numpy>=1.14.0'
                         ],
     ext_modules       = [
         Extension('object_detection_retinanet.utils.compute_overlap', ['object_detection_retinanet/utils/compute_overlap.pyx'],
