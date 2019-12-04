@@ -18,9 +18,10 @@ limitations under the License.
 
 import numpy as np
 import math
+from tensorflow.keras import initializers
 
 
-class PriorProbability(keras.initializers.Initializer):
+class PriorProbability(initializers.Initializer):
     """ Apply a prior probability to the weights.
     """
 
