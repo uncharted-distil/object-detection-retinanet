@@ -16,6 +16,7 @@ limitations under the License.
 
 import tensorflow.keras as keras
 from tensorflow.keras import backend as K
+import tensorflow.keras.callbacks as callbacks
 #from ..utils.eval import evaluate
 from object_detection_retinanet.utils.eval import evaluate
 
