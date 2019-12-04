@@ -15,7 +15,7 @@ limitations under the License.
 """
 
 
-import tensorflow.keras
+import tensorflow.keras as keras
 from keras.utils import get_file
 
 from . import retinanet

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import tensorflow.keras
+import tensorflow.keras as keras
 from keras.applications import mobilenet
 from keras.utils import get_file
 from ..utils.image import preprocess_image
