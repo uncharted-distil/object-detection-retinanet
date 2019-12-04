@@ -15,8 +15,8 @@ limitations under the License.
 """
 
 import tensorflow.keras as keras
-from keras.applications import mobilenet
-from keras.utils import get_file
+from tensorflow.keras.applications import mobilenet
+from tensorflow.keras.utils import get_file
 from ..utils.image import preprocess_image
 
 from . import retinanet

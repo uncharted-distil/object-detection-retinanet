@@ -15,8 +15,8 @@ limitations under the License.
 """
 
 import tensorflow.keras as keras
-from keras.applications import densenet
-from keras.utils import get_file
+from tensorflow.keras.applications import densenet
+from tensorflow.keras.utils import get_file
 
 from . import retinanet
 from . import Backbone
