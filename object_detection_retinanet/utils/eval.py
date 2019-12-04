@@ -17,7 +17,7 @@ limitations under the License.
 from .anchors import compute_overlap
 from .visualization import draw_detections, draw_annotations
 
-from tensorflow import keras
+import tensorflow.keras
 import numpy as np
 import os
 

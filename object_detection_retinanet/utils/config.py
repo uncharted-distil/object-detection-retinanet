@@ -16,7 +16,7 @@ limitations under the License.
 
 import configparser
 import numpy as np
-from tensorflow import keras
+import tensorflow.keras
 #from ..utils.anchors import AnchorParameters
 from object_detection_retinanet.utils.anchors import AnchorParameters
 

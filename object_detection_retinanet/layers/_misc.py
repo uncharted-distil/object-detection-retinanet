@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from tensorflow import keras
+import tensorflow.keras
 #from .. import backend
 #from ..utils import anchors as utils_anchors
 import object_detection_retinanet.backend
