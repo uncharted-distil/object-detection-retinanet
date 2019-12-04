@@ -52,7 +52,7 @@ def default_classification_model(
         'padding'     : 'same',
     }
 
-    if keras.backend.image_data_format() == 'channels_first':
+    if K.image_data_format() == 'channels_first':
         inputs  = keras.layers.Input(shape=(pyramid_feature_size, None, None))
     else:
         inputs  = keras.layers.Input(shape=(None, None, pyramid_feature_size))
@@ -76,7 +76,7 @@ def default_classification_model(
     )(outputs)
 
     # reshape output and apply sigmoid
-    if keras.backend.image_data_format() == 'channels_first':
+    if K.image_data_format() == 'channels_first':
         outputs = keras.layers.Permute((2, 3, 1), name='pyramid_classification_permute')(outputs)
     outputs = keras.layers.Reshape((-1, num_classes), name='pyramid_classification_reshape')(outputs)
     outputs = keras.layers.Activation('sigmoid', name='pyramid_classification_sigmoid')(outputs)
@@ -108,7 +108,7 @@ def default_regression_model(num_values, num_anchors, pyramid_feature_size=256, 
         'bias_initializer'   : 'zeros'
     }
 
-    if keras.backend.image_data_format() == 'channels_first':
+    if K.image_data_format() == 'channels_first':
         inputs  = keras.layers.Input(shape=(pyramid_feature_size, None, None))
     else:
         inputs  = keras.layers.Input(shape=(None, None, pyramid_feature_size))
@@ -122,7 +122,7 @@ def default_regression_model(num_values, num_anchors, pyramid_feature_size=256, 
         )(outputs)
 
     outputs = keras.layers.Conv2D(num_anchors * num_values, name='pyramid_regression', **options)(outputs)
-    if keras.backend.image_data_format() == 'channels_first':
+    if K.image_data_format() == 'channels_first':
         outputs = keras.layers.Permute((2, 3, 1), name='pyramid_regression_permute')(outputs)
     outputs = keras.layers.Reshape((-1, num_values), name='pyramid_regression_reshape')(outputs)
 

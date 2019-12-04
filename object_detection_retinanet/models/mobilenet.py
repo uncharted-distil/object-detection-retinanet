@@ -45,7 +45,7 @@ class MobileNetBackbone(Backbone):
         rows = int(self.backbone.split('_')[0].replace('mobilenet', ''))
 
         # load weights
-        if keras.backend.image_data_format() == 'channels_first':
+        if K.image_data_format() == 'channels_first':
             raise ValueError('Weights for "channels_last" format '
                              'are not available.')
         if alpha == 1.0:

@@ -40,7 +40,7 @@ def evaluate_coco(generator, model, threshold=0.05):
         image = generator.preprocess_image(image)
         image, scale = generator.resize_image(image)
 
-        if keras.backend.image_data_format() == 'channels_first':
+        if K.image_data_format() == 'channels_first':
             image = image.transpose((2, 0, 1))
 
         # run network

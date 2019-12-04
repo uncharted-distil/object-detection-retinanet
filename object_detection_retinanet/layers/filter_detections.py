@@ -51,21 +51,21 @@ def filter_detections(
     """
     def _filter_detections(scores, labels):
         # threshold based on score
-        indices = object_detection_retinanet.backend.where(keras.backend.greater(scores, score_threshold))
+        indices = object_detection_retinanet.backend.where(K.greater(scores, score_threshold))
 
         if nms:
             filtered_boxes  = object_detection_retinanet.backend.gather_nd(boxes, indices)
-            filtered_scores = keras.backend.gather(scores, indices)[:, 0]
+            filtered_scores = K.gather(scores, indices)[:, 0]
 
             # perform NMS
             nms_indices = object_detection_retinanet.backend.non_max_suppression(filtered_boxes, filtered_scores, max_output_size=max_detections, iou_threshold=nms_threshold)
 
             # filter indices based on NMS
-            indices = keras.backend.gather(indices, nms_indices)
+            indices = K.gather(indices, nms_indices)
 
         # add indices to list of all indices
         labels = object_detection_retinanet.backend.gather_nd(labels, indices)
-        indices = keras.backend.stack([indices[:, 0], labels], axis=1)
+        indices = K.stack([indices[:, 0], labels], axis=1)
 
         return indices
 
@@ -74,40 +74,40 @@ def filter_detections(
         # perform per class filtering
         for c in range(int(classification.shape[1])):
             scores = classification[:, c]
-            labels = c * object_detection_retinanet.backend.ones((keras.backend.shape(scores)[0],), dtype='int64')
+            labels = c * object_detection_retinanet.backend.ones((K.shape(scores)[0],), dtype='int64')
             all_indices.append(_filter_detections(scores, labels))
 
         # concatenate indices to single tensor
-        indices = keras.backend.concatenate(all_indices, axis=0)
+        indices = K.concatenate(all_indices, axis=0)
     else:
-        scores  = keras.backend.max(classification, axis    = 1)
-        labels  = keras.backend.argmax(classification, axis = 1)
+        scores  = K.max(classification, axis    = 1)
+        labels  = K.argmax(classification, axis = 1)
         indices = _filter_detections(scores, labels)
 
     # select top k
     scores              = object_detection_retinanet.backend.gather_nd(classification, indices)
     labels              = indices[:, 1]
-    scores, top_indices = object_detection_retinanet.backend.top_k(scores, k=keras.backend.minimum(max_detections, keras.backend.shape(scores)[0]))
+    scores, top_indices = object_detection_retinanet.backend.top_k(scores, k=K.minimum(max_detections, K.shape(scores)[0]))
 
     # filter input using the final set of indices
-    indices             = keras.backend.gather(indices[:, 0], top_indices)
-    boxes               = keras.backend.gather(boxes, indices)
-    labels              = keras.backend.gather(labels, top_indices)
-    other_              = [keras.backend.gather(o, indices) for o in other]
+    indices             = K.gather(indices[:, 0], top_indices)
+    boxes               = K.gather(boxes, indices)
+    labels              = K.gather(labels, top_indices)
+    other_              = [K.gather(o, indices) for o in other]
 
     # zero pad the outputs
-    pad_size = keras.backend.maximum(0, max_detections - keras.backend.shape(scores)[0])
+    pad_size = K.maximum(0, max_detections - K.shape(scores)[0])
     boxes    = object_detection_retinanet.backend.pad(boxes, [[0, pad_size], [0, 0]], constant_values=-1)
     scores   = object_detection_retinanet.backend.pad(scores, [[0, pad_size]], constant_values=-1)
     labels   = object_detection_retinanet.backend.pad(labels, [[0, pad_size]], constant_values=-1)
-    labels   = keras.backend.cast(labels, 'int32')
+    labels   = K.cast(labels, 'int32')
     other_   = [object_detection_retinanet.backend.pad(o, [[0, pad_size]] + [[0, 0] for _ in range(1, len(o.shape))], constant_values=-1) for o in other_]
 
     # set shapes, since we know what they are
     boxes.set_shape([max_detections, 4])
     scores.set_shape([max_detections])
     labels.set_shape([max_detections])
-    for o, s in zip(other_, [list(keras.backend.int_shape(o)) for o in other]):
+    for o, s in zip(other_, [list(K.int_shape(o)) for o in other]):
         o.set_shape([max_detections] + s[1:])
 
     return [boxes, scores, labels] + other_
@@ -176,7 +176,7 @@ class FilterDetections(keras.layers.Layer):
         outputs = object_detection_retinanet.backend.map_fn(
             _filter_detections,
             elems=[boxes, classification, other],
-            dtype=[keras.backend.floatx(), keras.backend.floatx(), 'int32'] + [o.dtype for o in other],
+            dtype=[K.floatx(), K.floatx(), 'int32'] + [o.dtype for o in other],
             parallel_iterations=self.parallel_iterations
         )
 

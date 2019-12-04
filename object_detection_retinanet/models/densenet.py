@@ -50,7 +50,7 @@ class DenseNetBackbone(Backbone):
         file_name = '{}_weights_tf_dim_ordering_tf_kernels_notop.h5'
 
         # load weights
-        if keras.backend.image_data_format() == 'channels_first':
+        if K.image_data_format() == 'channels_first':
             raise ValueError('Weights for "channels_first" format are not available.')
 
         weights_url = origin + file_name.format(self.backbone)
