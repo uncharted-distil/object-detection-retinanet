@@ -14,14 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import tensorflow.keras as keras
-from tensorflow.keras import backend as K
-import tensorflow.keras.callbacks as callbacks
+import keras
 #from ..utils.eval import evaluate
 from object_detection_retinanet.utils.eval import evaluate
 
 
-class Evaluate(callbacks.Callback):
+class Evaluate(keras.callbacks.Callback):
     """ Evaluation callback for arbitrary datasets.
     """
 
@@ -44,7 +42,7 @@ class Evaluate(callbacks.Callback):
             score_threshold  : The score confidence threshold to use for detections.
             max_detections   : The maximum number of detections to use per image.
             save_path        : The path to save images with visualized detections to.
-            tensorboard      : Instance of callbacks.TensorBoard used to log the mAP value.
+            tensorboard      : Instance of keras.callbacks.TensorBoard used to log the mAP value.
             weighted_average : Compute the mAP using the weighted average of precisions among classes.
             verbose          : Set the verbosity level, by default this is set to 1.
         """

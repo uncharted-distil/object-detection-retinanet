@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import tensorflow.keras
+import keras
 #from .. import initializers
 #from .. import layers
 #from ..utils.anchors import AnchorParameters
@@ -44,7 +44,7 @@ def default_classification_model(
         name                        : The name of the submodel.
 
     Returns
-        A models.Model that predicts classes for each anchor.
+        A keras.models.Model that predicts classes for each anchor.
     """
     options = {
         'kernel_size' : 3,
@@ -52,7 +52,7 @@ def default_classification_model(
         'padding'     : 'same',
     }
 
-    if K.image_data_format() == 'channels_first':
+    if keras.backend.image_data_format() == 'channels_first':
         inputs  = keras.layers.Input(shape=(pyramid_feature_size, None, None))
     else:
         inputs  = keras.layers.Input(shape=(None, None, pyramid_feature_size))
@@ -76,12 +76,12 @@ def default_classification_model(
     )(outputs)
 
     # reshape output and apply sigmoid
-    if K.image_data_format() == 'channels_first':
+    if keras.backend.image_data_format() == 'channels_first':
         outputs = keras.layers.Permute((2, 3, 1), name='pyramid_classification_permute')(outputs)
     outputs = keras.layers.Reshape((-1, num_classes), name='pyramid_classification_reshape')(outputs)
     outputs = keras.layers.Activation('sigmoid', name='pyramid_classification_sigmoid')(outputs)
 
-    return models.Model(inputs=inputs, outputs=outputs, name=name)
+    return keras.models.Model(inputs=inputs, outputs=outputs, name=name)
 
 
 def default_regression_model(num_values, num_anchors, pyramid_feature_size=256, regression_feature_size=256, name='regression_submodel'):
@@ -95,7 +95,7 @@ def default_regression_model(num_values, num_anchors, pyramid_feature_size=256, 
         name                    : The name of the submodel.
 
     Returns
-        A models.Model that predicts regression values for each anchor.
+        A keras.models.Model that predicts regression values for each anchor.
     """
     # All new conv layers except the final one in the
     # RetinaNet (classification) subnets are initialized
@@ -108,7 +108,7 @@ def default_regression_model(num_values, num_anchors, pyramid_feature_size=256, 
         'bias_initializer'   : 'zeros'
     }
 
-    if K.image_data_format() == 'channels_first':
+    if keras.backend.image_data_format() == 'channels_first':
         inputs  = keras.layers.Input(shape=(pyramid_feature_size, None, None))
     else:
         inputs  = keras.layers.Input(shape=(None, None, pyramid_feature_size))
@@ -122,11 +122,11 @@ def default_regression_model(num_values, num_anchors, pyramid_feature_size=256, 
         )(outputs)
 
     outputs = keras.layers.Conv2D(num_anchors * num_values, name='pyramid_regression', **options)(outputs)
-    if K.image_data_format() == 'channels_first':
+    if keras.backend.image_data_format() == 'channels_first':
         outputs = keras.layers.Permute((2, 3, 1), name='pyramid_regression_permute')(outputs)
     outputs = keras.layers.Reshape((-1, num_values), name='pyramid_regression_reshape')(outputs)
 
-    return models.Model(inputs=inputs, outputs=outputs, name=name)
+    return keras.models.Model(inputs=inputs, outputs=outputs, name=name)
 
 
 def __create_pyramid_features(C3, C4, C5, feature_size=256):
@@ -262,7 +262,7 @@ def retinanet(
         name                    : Name of the model.
 
     Returns
-        A models.Model which takes an image as input and outputs generated anchors and the result from each submodel on every pyramid level.
+        A keras.models.Model which takes an image as input and outputs generated anchors and the result from each submodel on every pyramid level.
 
         The order of the outputs is as defined in submodels:
         ```
@@ -286,7 +286,7 @@ def retinanet(
     # for all pyramid levels, run available submodels
     pyramids = __build_pyramid(submodels, features)
 
-    return models.Model(inputs=inputs, outputs=pyramids, name=name)
+    return keras.models.Model(inputs=inputs, outputs=pyramids, name=name)
 
 
 def retinanet_bbox(
@@ -311,7 +311,7 @@ def retinanet_bbox(
         *kwargs               : Additional kwargs to pass to the minimal retinanet model.
 
     Returns
-        A models.Model which takes an image as input and outputs the detections on the image.
+        A keras.models.Model which takes an image as input and outputs the detections on the image.
 
         The order is defined as follows:
         ```
@@ -354,4 +354,4 @@ def retinanet_bbox(
     )([boxes, classification] + other)
 
     # construct the model
-    return models.Model(inputs=model.inputs, outputs=detections, name=name)
+    return keras.models.Model(inputs=model.inputs, outputs=detections, name=name)

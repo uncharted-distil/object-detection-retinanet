@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import tensorflow.keras as keras
-from tensorflow.keras import backend as K
+import keras
 #from . import backend
 import object_detection_retinanet.backend
 
@@ -47,24 +46,24 @@ def focal(alpha=0.25, gamma=2.0):
         classification = y_pred
 
         # filter out "ignore" anchors
-        indices        = object_detection_retinanet.backend.where(K.not_equal(anchor_state, -1))
+        indices        = object_detection_retinanet.backend.where(keras.backend.not_equal(anchor_state, -1))
         labels         = object_detection_retinanet.backend.gather_nd(labels, indices)
         classification = object_detection_retinanet.backend.gather_nd(classification, indices)
 
         # compute the focal loss
-        alpha_factor = K.ones_like(labels) * alpha
-        alpha_factor = object_detection_retinanet.backend.where(K.equal(labels, 1), alpha_factor, 1 - alpha_factor)
-        focal_weight = object_detection_retinanet.backend.where(K.equal(labels, 1), 1 - classification, classification)
+        alpha_factor = keras.backend.ones_like(labels) * alpha
+        alpha_factor = object_detection_retinanet.backend.where(keras.backend.equal(labels, 1), alpha_factor, 1 - alpha_factor)
+        focal_weight = object_detection_retinanet.backend.where(keras.backend.equal(labels, 1), 1 - classification, classification)
         focal_weight = alpha_factor * focal_weight ** gamma
 
-        cls_loss = focal_weight * K.binary_crossentropy(labels, classification)
+        cls_loss = focal_weight * keras.backend.binary_crossentropy(labels, classification)
 
         # compute the normalizer: the number of positive anchors
-        normalizer = object_detection_retinanet.backend.where(K.equal(anchor_state, 1))
-        normalizer = K.cast(K.shape(normalizer)[0], K.floatx())
-        normalizer = K.maximum(K.cast_to_floatx(1.0), normalizer)
+        normalizer = object_detection_retinanet.backend.where(keras.backend.equal(anchor_state, 1))
+        normalizer = keras.backend.cast(keras.backend.shape(normalizer)[0], keras.backend.floatx())
+        normalizer = keras.backend.maximum(keras.backend.cast_to_floatx(1.0), normalizer)
 
-        return K.sum(cls_loss) / normalizer
+        return keras.backend.sum(cls_loss) / normalizer
 
     return _focal
 
@@ -96,7 +95,7 @@ def smooth_l1(sigma=3.0):
         anchor_state      = y_true[:, :, -1]
 
         # filter out "ignore" anchors
-        indices           = object_detection_retinanet.backend.where(K.equal(anchor_state, 1))
+        indices           = object_detection_retinanet.backend.where(keras.backend.equal(anchor_state, 1))
         regression        = object_detection_retinanet.backend.gather_nd(regression, indices)
         regression_target = object_detection_retinanet.backend.gather_nd(regression_target, indices)
 
@@ -104,16 +103,16 @@ def smooth_l1(sigma=3.0):
         # f(x) = 0.5 * (sigma * x)^2          if |x| < 1 / sigma / sigma
         #        |x| - 0.5 / sigma / sigma    otherwise
         regression_diff = regression - regression_target
-        regression_diff = K.abs(regression_diff)
+        regression_diff = keras.backend.abs(regression_diff)
         regression_loss = object_detection_retinanet.backend.where(
-            K.less(regression_diff, 1.0 / sigma_squared),
-            0.5 * sigma_squared * K.pow(regression_diff, 2),
+            keras.backend.less(regression_diff, 1.0 / sigma_squared),
+            0.5 * sigma_squared * keras.backend.pow(regression_diff, 2),
             regression_diff - 0.5 / sigma_squared
         )
 
         # compute the normalizer: the number of positive anchors
-        normalizer = K.maximum(1, K.shape(indices)[0])
-        normalizer = K.cast(normalizer, dtype=K.floatx())
-        return K.sum(regression_loss) / normalizer
+        normalizer = keras.backend.maximum(1, keras.backend.shape(indices)[0])
+        normalizer = keras.backend.cast(normalizer, dtype=keras.backend.floatx())
+        return keras.backend.sum(regression_loss) / normalizer
 
     return _smooth_l1

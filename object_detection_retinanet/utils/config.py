@@ -16,8 +16,7 @@ limitations under the License.
 
 import configparser
 import numpy as np
-import tensorflow.keras as keras
-from tensorflow.keras import backend as K
+import keras
 #from ..utils.anchors import AnchorParameters
 from object_detection_retinanet.utils.anchors import AnchorParameters
 
@@ -41,8 +40,8 @@ def read_config_file(config_path):
 
 
 def parse_anchor_parameters(config):
-    ratios  = np.array(list(map(float, config['anchor_parameters']['ratios'].split(' '))), K.floatx())
-    scales  = np.array(list(map(float, config['anchor_parameters']['scales'].split(' '))), K.floatx())
+    ratios  = np.array(list(map(float, config['anchor_parameters']['ratios'].split(' '))), keras.backend.floatx())
+    scales  = np.array(list(map(float, config['anchor_parameters']['scales'].split(' '))), keras.backend.floatx())
     sizes   = list(map(int, config['anchor_parameters']['sizes'].split(' ')))
     strides = list(map(int, config['anchor_parameters']['strides'].split(' ')))
 

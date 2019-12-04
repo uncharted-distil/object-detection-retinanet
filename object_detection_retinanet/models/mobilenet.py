@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import tensorflow.keras as keras
-from tensorflow.keras import backend as K
-from tensorflow.keras.applications import mobilenet
-from tensorflow.keras.utils import get_file
+import keras
+from keras.applications import mobilenet
+from keras.utils import get_file
 from ..utils.image import preprocess_image
 
 from . import retinanet
@@ -46,7 +45,7 @@ class MobileNetBackbone(Backbone):
         rows = int(self.backbone.split('_')[0].replace('mobilenet', ''))
 
         # load weights
-        if K.image_data_format() == 'channels_first':
+        if keras.backend.image_data_format() == 'channels_first':
             raise ValueError('Weights for "channels_last" format '
                              'are not available.')
         if alpha == 1.0:
@@ -101,7 +100,7 @@ def mobilenet_retinanet(num_classes, backbone='mobilenet224_1.0', inputs=None, m
     # create the full model
     layer_names = ['conv_pw_5_relu', 'conv_pw_11_relu', 'conv_pw_13_relu']
     layer_outputs = [backbone.get_layer(name).output for name in layer_names]
-    backbone = models.Model(inputs=inputs, outputs=layer_outputs, name=backbone.name)
+    backbone = keras.models.Model(inputs=inputs, outputs=layer_outputs, name=backbone.name)
 
     # invoke modifier if given
     if modifier:

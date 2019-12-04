@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import tensorflow.keras as keras
-from tensorflow.keras import backend as K
+import keras
 #from .. import backend
 #from ..utils import anchors as utils_anchors
 import object_detection_retinanet.backend
@@ -52,7 +51,7 @@ class Anchors(keras.layers.Layer):
             self.scales  = np.array(scales)
 
         self.num_anchors = len(ratios) * len(scales)
-        self.anchors     = K.variable(utils_anchors.generate_anchors(
+        self.anchors     = keras.backend.variable(utils_anchors.generate_anchors(
             base_size=size,
             ratios=ratios,
             scales=scales,
@@ -62,20 +61,20 @@ class Anchors(keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         features = inputs
-        features_shape = K.shape(features)
+        features_shape = keras.backend.shape(features)
 
         # generate proposals from bbox deltas and shifted anchors
-        if K.image_data_format() == 'channels_first':
+        if keras.backend.image_data_format() == 'channels_first':
             anchors = object_detection_retinanet.backend.shift(features_shape[2:4], self.stride, self.anchors)
         else:
             anchors = object_detection_retinanet.backend.shift(features_shape[1:3], self.stride, self.anchors)
-        anchors = K.tile(K.expand_dims(anchors, axis=0), (features_shape[0], 1, 1))
+        anchors = keras.backend.tile(keras.backend.expand_dims(anchors, axis=0), (features_shape[0], 1, 1))
 
         return anchors
 
     def compute_output_shape(self, input_shape):
         if None not in input_shape[1:]:
-            if K.image_data_format() == 'channels_first':
+            if keras.backend.image_data_format() == 'channels_first':
                 total = np.prod(input_shape[2:4]) * self.num_anchors
             else:
                 total = np.prod(input_shape[1:3]) * self.num_anchors
@@ -102,8 +101,8 @@ class UpsampleLike(keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         source, target = inputs
-        target_shape = K.shape(target)
-        if K.image_data_format() == 'channels_first':
+        target_shape = keras.backend.shape(target)
+        if keras.backend.image_data_format() == 'channels_first':
             source = object_detection_retinanet.backend.transpose(source, (0, 2, 3, 1))
             output = object_detection_retinanet.backend.resize(source, (target_shape[2], target_shape[3]), method='nearest')
             output = object_detection_retinanet.backend.transpose(output, (0, 3, 1, 2))
@@ -112,7 +111,7 @@ class UpsampleLike(keras.layers.Layer):
             return object_detection_retinanet.backend.resize(source, (target_shape[1], target_shape[2]), method='nearest')
 
     def compute_output_shape(self, input_shape):
-        if K.image_data_format() == 'channels_first':
+        if keras.backend.image_data_format() == 'channels_first':
             return (input_shape[0][0], input_shape[0][1]) + input_shape[1][2:4]
         else:
             return (input_shape[0][0],) + input_shape[1][1:3] + (input_shape[0][-1],)
@@ -170,8 +169,8 @@ class ClipBoxes(keras.layers.Layer):
     """
     def call(self, inputs, **kwargs):
         image, boxes = inputs
-        shape = K.cast(K.shape(image), K.floatx())
-        if K.image_data_format() == 'channels_first':
+        shape = keras.backend.cast(keras.backend.shape(image), keras.backend.floatx())
+        if keras.backend.image_data_format() == 'channels_first':
             _, _, height, width = object_detection_retinanet.backend.unstack(shape, axis=0)
         else:
             _, height, width, _ = object_detection_retinanet.backend.unstack(shape, axis=0)
@@ -182,7 +181,7 @@ class ClipBoxes(keras.layers.Layer):
         x2 = object_detection_retinanet.backend.clip_by_value(x2, 0, width)
         y2 = object_detection_retinanet.backend.clip_by_value(y2, 0, height)
 
-        return K.stack([x1, y1, x2, y2], axis=2)
+        return keras.backend.stack([x1, y1, x2, y2], axis=2)
 
     def compute_output_shape(self, input_shape):
         return input_shape[1]

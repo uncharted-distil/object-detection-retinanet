@@ -13,14 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import tensorflow as tf
 
 import numpy as np
 import random
 import warnings
 
-import tensorflow.keras as keras
-from tensorflow.keras import backend as K
+import keras
 
 # from ..utils.anchors import (
 #     anchor_targets_bbox,
@@ -271,7 +269,7 @@ class Generator(keras.utils.Sequence):
         annotations['bboxes'] *= image_scale
 
         # convert to the wanted keras floatx
-        image = K.cast_to_floatx(image)
+        image = keras.backend.cast_to_floatx(image)
 
         return image, annotations
 
@@ -306,13 +304,13 @@ class Generator(keras.utils.Sequence):
         max_shape = tuple(max(image.shape[x] for image in image_group) for x in range(3))
 
         # construct an image batch object
-        image_batch = np.zeros((self.batch_size,) + max_shape, dtype=K.floatx())
+        image_batch = np.zeros((self.batch_size,) + max_shape, dtype=keras.backend.floatx())
 
         # copy all images to the upper left part of the image batch object
         for image_index, image in enumerate(image_group):
             image_batch[image_index, :image.shape[0], :image.shape[1], :image.shape[2]] = image
 
-        if K.image_data_format() == 'channels_first':
+        if keras.backend.image_data_format() == 'channels_first':
             image_batch = image_batch.transpose((0, 3, 1, 2))
 
         return image_batch
@@ -359,10 +357,10 @@ class Generator(keras.utils.Sequence):
         image_group, annotations_group = self.preprocess_group(image_group, annotations_group)
 
         # compute network inputs
-        inputs = tf.convert_to_tensor(self.compute_inputs(image_group), dtype = tf.float32)
+        inputs = self.compute_inputs(image_group)
 
         # compute network targets
-        targets = tf.convert_to_tensor(self.compute_targets(image_group, annotations_group), dtype = tf.float32)
+        targets = self.compute_targets(image_group, annotations_group)
 
         return inputs, targets
 

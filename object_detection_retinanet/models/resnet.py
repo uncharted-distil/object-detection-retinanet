@@ -14,9 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import tensorflow.keras as keras
-from tensorflow.keras import backend as K
-from tensorflow.keras.utils import get_file
+import keras
+from keras.utils import get_file
 import keras_resnet
 import keras_resnet.models
 
@@ -91,7 +90,7 @@ def resnet_retinanet(num_classes, backbone='resnet50', inputs=None, modifier=Non
     """
     # choose default input
     if inputs is None:
-        if K.image_data_format() == 'channels_first':
+        if keras.backend.image_data_format() == 'channels_first':
             inputs = keras.layers.Input(shape=(3, None, None))
         else:
             inputs = keras.layers.Input(shape=(None, None, 3))

@@ -17,8 +17,7 @@ limitations under the License.
 from .anchors import compute_overlap
 from .visualization import draw_detections, draw_annotations
 
-import tensorflow.keras as keras
-from tensorflow.keras import backend as K
+import keras
 import numpy as np
 import os
 
@@ -78,7 +77,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         image        = generator.preprocess_image(raw_image.copy())
         image, scale = generator.resize_image(image)
 
-        if K.image_data_format() == 'channels_first':
+        if keras.backend.image_data_format() == 'channels_first':
             image = image.transpose((2, 0, 1))
 
         # run network

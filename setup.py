@@ -19,11 +19,11 @@ setup(
                          'keras-resnet==0.1.0',
                          'six',
                          'scipy>=1.2.1,<=1.3.1',
-                         'cython==0.29.14',
+                         'cython=0.29.14',
                          'Pillow',
                          'progressbar2',
                          'opencv-python',
-                         'numpy>=1.14.0'
+                         'numpy>=1.15.4,<=1.17.3'
                         ],
     ext_modules       = [
         Extension('object_detection_retinanet.utils.compute_overlap', ['object_detection_retinanet/utils/compute_overlap.pyx'],

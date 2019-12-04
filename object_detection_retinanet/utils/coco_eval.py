@@ -16,8 +16,7 @@ limitations under the License.
 
 from pycocotools.cocoeval import COCOeval
 
-import tensorflow.keras as keras
-from tensorflow.keras import backend as K
+import keras
 import numpy as np
 import json
 
@@ -41,7 +40,7 @@ def evaluate_coco(generator, model, threshold=0.05):
         image = generator.preprocess_image(image)
         image, scale = generator.resize_image(image)
 
-        if K.image_data_format() == 'channels_first':
+        if keras.backend.image_data_format() == 'channels_first':
             image = image.transpose((2, 0, 1))
 
         # run network
