@@ -15,7 +15,7 @@ setup(
     #packages          = ['object_detection_retinanet'],
     packages          = find_packages(),
     include_package_data = True,
-    install_requires  = ['keras==2.3.0',
+    install_requires  = ['keras',
                          'keras-resnet==0.1.0',
                          'six',
                          'scipy>=1.2.1,<=1.3.1',
