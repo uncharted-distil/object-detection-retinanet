@@ -16,7 +16,7 @@ limitations under the License.
 
 import numpy as np
 import keras
-
+import tensorflow as tf
 #from ..utils.compute_overlap import compute_overlap
 import pyximport
 pyximport.install()
@@ -116,7 +116,7 @@ def anchor_targets_bbox(
             labels_batch[index, indices, -1]     = -1
             regression_batch[index, indices, -1] = -1
 
-    return regression_batch, labels_batch
+    return tf.constant(regression_batch, dtype = tf.float32), tf.constant(labels_batch, dtype = tf.float32)
 
 
 def compute_gt_annotations(

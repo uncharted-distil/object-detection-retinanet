@@ -17,7 +17,7 @@ limitations under the License.
 import numpy as np
 import random
 import warnings
-
+import tensorflow as tf
 import keras
 
 # from ..utils.anchors import (
@@ -308,12 +308,13 @@ class Generator(keras.utils.Sequence):
 
         # copy all images to the upper left part of the image batch object
         for image_index, image in enumerate(image_group):
+            #print(image.shape)
             image_batch[image_index, :image.shape[0], :image.shape[1], :image.shape[2]] = image
 
         if keras.backend.image_data_format() == 'channels_first':
             image_batch = image_batch.transpose((0, 3, 1, 2))
 
-        return image_batch
+        return tf.constant(image_batch, dtype = tf.float32)
 
     def generate_anchors(self, image_shape):
         anchor_params = None
