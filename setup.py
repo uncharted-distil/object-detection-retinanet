@@ -15,15 +15,15 @@ setup(
     #packages          = ['object_detection_retinanet'],
     packages          = find_packages(),
     include_package_data = True,
-    install_requires  = ['keras',
+    install_requires  = ['Keras==2.3.1',
                          'keras-resnet==0.1.0',
                          'six',
-                         'scipy>=1.2.1,<=1.3.1',
-                         'cython==0.29.14',
-                         'Pillow',
+                         'scipy==1.4.1',
+                         'cython==0.29.16',
+                         'Pillow==7.1.1',
                          'progressbar2',
                          'opencv-python',
-                         'numpy>=1.15.4,<=1.17.3'
+                         'numpy>=1.15.4,<=1.18.2'
                         ],
     ext_modules       = [
         Extension('object_detection_retinanet.utils.compute_overlap', ['object_detection_retinanet/utils/compute_overlap.pyx'],
