@@ -20,7 +20,7 @@ setup(
                          'six',
                          'scipy==1.4.1',
                          'cython==0.29.16',
-                         'Pillow==7.1.1',
+                         'Pillow==7.1.2',
                          'progressbar2',
                          'opencv-python',
                          'numpy>=1.15.4,<=1.18.2'
