@@ -12,6 +12,7 @@ setup(
     url               = 'https://github.com/NewKnowledge/object-detection-retinanet/',
     author            = 'Sanjeev Namjoshi',
     author_email      = 'sanjeev@yonder.co',
+    license           = 'Apache-2.0',
     #packages          = ['object_detection_retinanet'],
     packages          = find_packages(),
     include_package_data = True,
