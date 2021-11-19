@@ -7,9 +7,9 @@ from distutils.command.build_ext import build_ext as DistUtilsBuildExt
 
 setup(
     name              = 'object-detection-retinanet',
-    version           = '0.1.0',
+    version           = '0.1.1',
     description       = 'Keras implementation of RetinaNet',
-    url               = 'https://github.com/NewKnowledge/object-detection-retinanet/',
+    url               = 'https://github.com/uncharted-distil/object-detection-retinanet/',
     author            = 'Sanjeev Namjoshi',
     author_email      = 'sanjeev@yonder.co',
     license           = 'Apache-2.0',
@@ -20,7 +20,7 @@ setup(
                          'keras-resnet==0.1.0',
                          'six',
                          'scipy==1.4.1',
-                         'cython==0.29.16',
+                         'cython>=0.29.16',
                          'Pillow==7.1.2',
                          'progressbar2',
                          'opencv-python',
